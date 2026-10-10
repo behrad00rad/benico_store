@@ -19,7 +19,7 @@ from django.urls import path,include,re_path
 from django.views.generic import TemplateView
 
 urlpatterns = [
-    re_path(r'^(?:dashboard(?:/.*)?|search|recipte/[^/]+)/?$', TemplateView.as_view(template_name='index.html')), 
+    re_path(r'^(?:dashboard(?:/.*)?|dashboad(?:/.*)?|search|recipte/[^/]+)/?$', TemplateView.as_view(template_name='index.html')),
     path('',TemplateView.as_view(template_name='index.html')),
     path('cart/',TemplateView.as_view(template_name='index.html')),
     path('admin/', TemplateView.as_view(template_name='index.html')),
@@ -35,7 +35,7 @@ urlpatterns = [
     path('item/<slug:id>/',TemplateView.as_view(template_name='index.html')),
     path('products/<slug:page>/',TemplateView.as_view(template_name='index.html')),
     path('dashboard/<slug:page>/',TemplateView.as_view(template_name='index.html')),
-    path('products/<slug:page>/<slug:e>/',TemplateView.as_view(template_name='index.html')), 
+    path('products/<slug:page>/<slug:e>/',TemplateView.as_view(template_name='index.html')),
     path('dashboard/<slug:page>/<slug:w>/',TemplateView.as_view(template_name='index.html')),
     path('products/<slug:page>/<slug:e>/<slug:dard>/<slug:fd>',TemplateView.as_view(template_name='index.html')),
 ]

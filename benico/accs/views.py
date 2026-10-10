@@ -82,7 +82,6 @@ def get_user_info(request):
             'username':i.user.username,
             'is_staff':i.user.is_staff,
             })
-    print(res)
     return  Response(res,status.HTTP_200_OK)
 
 
@@ -90,7 +89,6 @@ def get_user_info(request):
 def get_user_address(request): 
     res = []
     token = request.data.get('token')
-    print(token)
     try:
             user_info = userinfo.objects.get(token=token)
             user = user_info.user
@@ -271,29 +269,31 @@ from rest_framework import status
 from rest_framework.response import Response
 import random
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import F
 
 @api_view(['POST'])
 def submit_order(request):
+    from .customer_views import delivery_values
+    import uuid, hashlib
     token = request.data.get('token', '')
     user = None
     if token:
         try:
-            user = userinfo.objects.get(token=token).user
-        except userinfo.DoesNotExist:
+            user = Token.objects.select_related('user').get(key=token, user__is_active=True).user
+        except Token.DoesNotExist:
             return Response({'error': 'Please sign in again'}, status=401)
-    required = ('address', 'state', 'city', 'fname', 'lname', 'PostalCode', 'phoneNumber')
-    if any(not request.data.get(field) for field in required):
-        return Response({'error': 'Complete the delivery information'}, status=400)
-    if not re.fullmatch(r'\d{10}', str(request.data['PostalCode'])) or not re.fullmatch(r'\d{11}', str(request.data['phoneNumber'])):
-        return Response({'error': 'Enter a valid postal code and phone number'}, status=400)
+    delivery, errors = delivery_values(request.data)
+    if errors:
+        return Response({'error': 'Check the delivery information', 'fields': errors}, status=400)
     lines = request.data.get('products')
     if not isinstance(lines, list) or not lines:
         return Response({'error': 'Your bag is empty'}, status=400)
     quantities = {}
     try:
         for line in lines:
+            if not isinstance(line, list) or len(line) != 1:
+                raise ValueError()
             data = line[0]
             product_id = int(data['productId'])
             quantity = data['productQ']
@@ -304,6 +304,22 @@ def submit_order(request):
             quantities[key] = quantities.get(key, 0) + quantity
     except (KeyError, IndexError, TypeError, ValueError):
         return Response({'error': 'Invalid product, size or quantity'}, status=400)
+    checkout_key = request.data.get('checkout_key')
+    if checkout_key:
+        try:
+            checkout_key = uuid.UUID(str(checkout_key))
+        except ValueError:
+            return Response({'error':'Invalid checkout reference'},status=400)
+    fingerprint = hashlib.sha256(json.dumps({'user':user.pk if user else None, 'delivery':delivery,
+        'lines':sorted((key[0],key[1],quantity) for key,quantity in quantities.items())},sort_keys=True).encode()).hexdigest()
+    def existing_response(record):
+        if record.checkout_fingerprint != fingerprint:
+            return Response({'error':'This checkout reference belongs to a different order. Refresh checkout.'},status=409)
+        return Response({'success':True,'order_id':record.pk,'paid':record.paid},status=201)
+    if checkout_key:
+        previous = order.objects.filter(checkout_key=checkout_key).first()
+        if previous:
+            return existing_response(previous)
     try:
         with transaction.atomic():
             products = {p.id: p for p in item.objects.filter(id__in=[key[0] for key in quantities])}
@@ -321,12 +337,18 @@ def submit_order(request):
             while order.objects.filter(pk=identifier).exists():
                 identifier = random.randint(10000000, 99999999)
             new_order = order.objects.create(order_id=identifier, user=user, price=total, paid=False,
-                address=request.data['address'], state=request.data['state'], city=request.data['city'],
-                Fname=request.data['fname'], Lname=request.data['lname'],
-                PostalCode=request.data['PostalCode'], Phone_number=request.data['phoneNumber'])
+                address=delivery['address'], state=delivery['state'], city=delivery['city'],
+                Fname=delivery['fname'], Lname=delivery['lname'],
+                PostalCode=delivery['PostalCode'], Phone_number=delivery['phoneNumber'],
+                checkout_key=checkout_key, checkout_fingerprint=fingerprint)
             for (product_id, size), quantity in quantities.items():
                 line = OrderP.objects.create(order_id=identifier, product=products[product_id], Q=quantity, size=size)
                 new_order.products.add(line)
+    except IntegrityError:
+        previous = order.objects.filter(checkout_key=checkout_key).first() if checkout_key else None
+        if previous:
+            return existing_response(previous)
+        raise
     except ValueError as error:
         return Response({'error': str(error)}, status=409)
     return Response({'success': True, 'order_id': identifier, 'paid': False}, status=201)

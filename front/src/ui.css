@@ -240,3 +240,5 @@ html { scroll-padding-top: 28px; }
  .product-media .product-gallery { max-height: 340px; aspect-ratio: 1; }
  .product-layout > div:last-child { padding: 22px; gap: 18px; }
 }
+
+.lux-actions a[aria-label]{position:relative}.nav-bag-count{position:absolute;inset-inline-end:0;top:0;min-width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:8px;background:#7c2338;color:#fff;border-radius:50%;padding:2px}

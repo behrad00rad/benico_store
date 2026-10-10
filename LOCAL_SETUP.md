@@ -61,3 +61,13 @@ the old `requirement.txt` includes unrelated packages and omits DRF.
 
 The running server is for local development. This check does not establish
 that authentication, checkout, payments, or deployment are ready.
+
+## Storefront content and customer pages
+
+Open `/admin/?section=content` while signed in as a staff user. Edit the homepage hero image, image focal point, bilingual titles and buttons, collection introduction, editorial cards, and brand story. The preview updates before saving. **Save to storefront** applies the content to all visitors; **Reload saved version** discards the draft. Images must be valid image files smaller than 10 MB. Button destinations must be product, collection, or contact paths within this store. Changing the interface language warns before discarding unsaved content.
+
+Content is stored in SQLite and uploaded images under the backend media directory. Keep the database and media in your deployment backups; Git contains the defaults and migrations, not private runtime records. Run `python manage.py migrate` after updating the source.
+
+The redesigned `/cart/` and `/checkout/` fetch current product prices and stock. Checkout validates every delivery field, accepts Persian digits, supports saved addresses and guest orders, and uses a unique checkout reference to prevent duplicate orders when retrying. Shipping charges are not included in merchandise totals. The payment gateway remains unconnected; submitted orders are explicitly unpaid and reserve stock.
+
+Customer pages at `/dashboard/detail/`, `/dashboard/address/`, and `/dashboard/orders/` use authenticated, owner-scoped endpoints. Address editing and removal update the account without deleting its profile. `/dashboad/` redirects to the dashboard for compatibility with that spelling.

@@ -1,7 +1,15 @@
 from django.urls import path,include
 from . import views
 from . import management_views
+from . import customer_views
+from product import content_views
 urlpatterns =[
+    path('customer/profile/', customer_views.profile),
+    path('customer/orders/', customer_views.customer_orders),
+    path('customer/addresses/', customer_views.address_book),
+    path('customer/addresses/<int:address_id>/', customer_views.address_book),
+    path('manage/content/', content_views.manage_content),
+    path('manage/content/images/', content_views.upload_content_image),
     path('manage/overview/', management_views.overview),
     path('manage/products/', management_views.save_product),
     path('manage/products/<int:product_id>/', management_views.save_product),

@@ -3,6 +3,7 @@ import datetime
 # Create your models here.
 from django.db import models
 import random
+import uuid
 
 CATEGORY_CHOICES = (("t-shirt","t-shirt"),("hoodie","hoodie"),('sweatshirt','sweatshirt'),("accessory","accessory"))
 
@@ -20,5 +21,16 @@ class item(models.Model):
 
     def __str__(self) :
         return str(self.id)+" "+self.title
+
+
+class StoreContent(models.Model):
+    content = models.JSONField(default=dict)
+    revision = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ContentImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    image = models.ImageField(upload_to='content/')
 
 

@@ -96,3 +96,5 @@
 @media(prefers-reduced-motion:reduce) { .admin-dialog { animation:none; } }
 
 .admin-editor textarea{width:100%;padding:12px;border:1px solid #ddd;background:#fff;color:#222;resize:vertical;font:inherit;line-height:1.7}
+
+.benico-admin .admin-sidebar nav{margin:55px 0 0;max-width:none}@media(max-width:700px){.benico-admin .admin-sidebar nav{margin:20px 0 0}}

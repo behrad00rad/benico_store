@@ -1,10 +1,13 @@
 import ItemPage from "./mods/item";
+import {useLayoutEffect} from 'react';
+import Footer from './mods/Footer';
 import Product from "./mods/product";
 import {
   Routes,
   BrowserRouter as Router,
   Route,
-  Navigate
+  Navigate,
+  useLocation
 } from "react-router-dom";
 import Main from "./mods/main";
 import Nav from "./mods/nav";
@@ -13,15 +16,25 @@ import { ThemeProvider } from "./mods/themeprovider";
 import Accounts from "./mods/accounts";
 import Dashboard from "./mods/dashbord";
 import Checkout from "./mods/Checkout";
-import AddAddress from "./mods/AddAddress";
+import AddAddress from "./mods/CustomerAddressEditor";
 import Cart from "./mods/Cart";
-import IAddressForm from "./mods/forom";
+import IAddressForm from "./mods/CustomerAddressEditor";
 import PasswordReset from "./mods/PasswordReset";
 import Search from "./mods/search"; 
 import Recipte from "./mods/recipte";
 import AboutUs from "./mods/verify";
 import {LanguageProvider, useLanguage} from './language';
 import AdminPanel from './mods/AdminPanel';
+
+function RouteScrollReset() {
+  const {pathname} = useLocation();
+  useLayoutEffect(()=>{
+    if (window.location.hash) return;
+    document.documentElement.scrollTop=0;
+    document.body.scrollTop=0;
+  },[pathname]);
+  return null;
+}
 
 
 function AppContent() {
@@ -60,28 +73,30 @@ function AppContent() {
     <ThemeProvider theme={theme}>
     <div className="site-root" data-theme={theme} lang={lang} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <Router>
+        <RouteScrollReset/>
         <Routes>
+        <Route path="/dashboad/*" element={<Navigate to="/dashboard/detail/" replace/>}/>
         <Route path="/admin/" element={<AdminPanel/>}/>
         <Route path="/checkout/" element={
-            <div className=" app-shell ">
+            <div className="commerce-route">
               <Nav /> 
             <Checkout/>
             </div>
           }/>
         <Route path="/cart/" element={
-            <div className=" app-shell ">
+            <div className="commerce-route">
               <Nav /> 
             <Cart/>
             </div>
           }/>
         <Route path="/dashboard/address/add/" element={
-        <div className=" app-shell ">
+        <div className="commerce-route">
           <Nav /> 
           <AddAddress/>
         </div>
         }/>
         <Route path="/dashboard/address/edit/:id" element={
-        <div className=" app-shell ">
+        <div className="commerce-route">
           <Nav /> 
           <IAddressForm/>
         </div>
@@ -114,12 +129,12 @@ function AppContent() {
             {!userinfo ?<Accounts/> : <Navigate to={userinfo?.[0]?.is_staff ? '/admin/' : '/dashboard/detail/'} replace />}
             </div>}/>
         <Route path="/dashboard/:Page?" element={
-          <div className=" app-shell ">
+          <div className="commerce-route">
             <Nav/>
-            {userinfo ?<Dashboard/> : <Navigate to="/accounts" replace />}
+            {token ?<Dashboard/> : <Navigate to="/accounts" replace />}
             </div>}/>
         <Route path="/search" element={<><Nav/><Search/></>} />  
-        <Route path="/recipte/:id" element={<><Nav/><Recipte/></>} />  
+        <Route path="/recipte/:id" element={<div className="commerce-route"><Nav/><Recipte/><Footer/></div>} />
         <Route path="/contact-us/" element={<><Nav/><AboutUs/></>} />  
 
 

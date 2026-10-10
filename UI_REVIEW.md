@@ -91,3 +91,9 @@ The storefront and custom admin baseline were pushed to GitHub as 7186560.
 ## Product page update
 
 Gucci-inspired paired gallery, thumbnails, image zoom, size selection, stock-aware bag actions, detail accordions, and related pieces. Product description and materials/care fields are editable in the custom panel. Existing products retain their current stock and prices; missing information is clearly identified. Visual browser verification was blocked by the desktop browser policy; build and automated tests are checked.
+
+## Content management and commerce update
+
+Added staff-only bilingual homepage content management with image upload, focal-point controls, live preview, section visibility and revision conflict protection. Redesigned cart, checkout, account details, address book/editor, orders and confirmation around the storefront typography and neutral palette.
+
+Verification: 21 backend tests and 19 frontend tests pass; production build succeeds with existing warnings in unrelated legacy pages. Browser checks cover content save -> homepage display -> original copy restoration, quantity/total changes, checkout validation, Persian mobile layout, and account section navigation. No live orders were submitted during these checks. Test bag contents are removed afterwards. Visual QA also fixed old account CSS conflicts and a route change crash caused by stale section data.

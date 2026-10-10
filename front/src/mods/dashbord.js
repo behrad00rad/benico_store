@@ -1,41 +1,26 @@
-import React, { useState, useEffect, useContext } from 'react';
-import DashNav from './dashnav';
-import { useParams } from 'react-router-dom';
-import Address from './Address';
-import Adetail from './Adetail';
-import Orders from './orders';
-import Footer from './Footer';
-import { ThemeContext } from './themeprovider';
+import {useEffect,useState} from 'react';
+import {Link,useParams} from 'react-router-dom';
+import {useLanguage} from '../language';
+import {accountRequest,money} from './commerce';
+import AccountLayout,{signOut} from './account-layout';
 
-const Dashboard = () => {
-  const theme = useContext(ThemeContext);
-  const [PageShow, setPG] = useState(null);
-  const { Page } = useParams();
-
-  useEffect(() => {
-    if (Page === "address") {
-      setPG(<Address />);
-    }
-    else if (Page === "detail" || !Page) {      
-      setPG(<Adetail />);
-    }
-    else if (Page === "orders") {
-      setPG(<Orders />);
-
-    }      
-  }, [Page]);
-
-  return (
-    <>
-    <div className='min-w-screen flex flex-col lg:flex-row min-h-screen h-fit sm:p-6 py-4 gap-4' data-theme={theme}>
-      <div className='bg-base-100 lg:w-4/5 h-fit'>
-        {PageShow ? PageShow : "not found" }
-      </div>
-      <DashNav/>
-    </div>
-      <Footer/>
-    </>
-  );
-};
-
-export default Dashboard;
+export default function Dashboard(){
+  const {Page='detail'}=useParams(),{t,lang}=useLanguage();
+  const [loaded,setLoaded]=useState(null),[error,setError]=useState(''),[reload,setReload]=useState(0),[remove,setRemove]=useState(null),[busy,setBusy]=useState(false);
+  const data=loaded?.page===Page?loaded.payload:null;
+  const titles={detail:t('اطلاعات حساب','Account details'),orders:t('سفارش‌های من','My orders'),address:t('نشانی‌ها','Address book')};
+  useEffect(()=>{setLoaded(null);setError('');setRemove(null);if(!titles[Page])return;const c=new AbortController();const endpoint={detail:'profile/',orders:'orders/',address:'addresses/'}[Page];accountRequest(endpoint,{signal:c.signal}).then(payload=>{if(!c.signal.aborted)setLoaded({page:Page,payload});}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>c.abort();
+    // Language changes remount the route.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[Page,reload]);
+  const deleteAddress=async id=>{setBusy(true);setError('');try{await accountRequest(`addresses/${id}/`,{method:'DELETE'});setLoaded(d=>({...d,payload:{...d.payload,addresses:d.payload.addresses.filter(a=>a.id!==id)}}));setRemove(null);}catch(e){setError(e.message);}finally{setBusy(false);}};
+  return <AccountLayout title={titles[Page]||t('صفحه پیدا نشد','Page not found')}>
+    {!titles[Page]?<Link to="/dashboard/detail/">{t('بازگشت به حساب','Return to your account')}</Link>:<>
+    {error&&<div className="commerce-error" role="alert"><p>{error}</p><button onClick={()=>setReload(v=>v+1)}>{t('تلاش مجدد','Try again')}</button> · <button onClick={signOut}>{t('ورود دوباره','Sign in again')}</button></div>}
+    {!data&&!error&&<p className="commerce-message" role="status">{t('در حال بارگذاری…','Loading your account…')}</p>}
+    {data&&Page==='detail'&&<><div className="account-welcome"><span>{data.username?.slice(0,1).toUpperCase()}</span><div><p>{t('خوش آمدید','Welcome back')}</p><h3>{data.fname?`${data.fname} ${data.lname}`:data.username}</h3></div></div><dl className="account-profile">{[[t('نام کاربری','Username'),data.username],[t('نام','Full name'),[data.fname,data.lname].filter(Boolean).join(' ')],[t('ایمیل','Email'),data.email],[t('تلفن','Phone'),data.phone]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'—'}</dd></div>)}</dl><p className="commerce-note">{t('نام و تلفن گیرنده از دفتر نشانی شما نمایش داده می‌شود.','Recipient name and phone are shown from your address book.')}</p><div className="account-quick-links"><Link to="/dashboard/orders/">{t('پیگیری سفارش‌ها','View your orders')} ↗</Link><Link to="/dashboard/address/">{t('مدیریت نشانی‌ها','Manage addresses')} ↗</Link>{data.is_staff&&<Link to="/admin/">{t('مدیریت فروشگاه','Store management')} ↗</Link>}</div></>}
+    {data&&Page==='orders'&&(!data.orders.length?<div className="account-empty"><h3>{t('هنوز سفارشی ثبت نشده','Your story starts here')}</h3><p>{t('بعد از ثبت سفارش، جزئیات آن اینجا نمایش داده می‌شود.','Your orders and their details will appear here.')}</p><Link className="commerce-primary" to="/products/">{t('مشاهده مجموعه','Explore the collection')} ↗</Link></div>:<div className="account-orders">{data.orders.map(o=><details key={o.id}><summary><span><b>#{o.id}</b><small>{new Date(o.date).toLocaleDateString(lang==='fa'?'fa-IR':'en-GB')}</small></span><span className={`account-status ${o.paid?'paid':''}`}>{o.paid?t('پرداخت شده','Paid'):t('پرداخت نشده','Unpaid')}</span><span>{money(o.price,lang,t)}</span><span>＋</span></summary><div className="account-order-detail">{o.products.map((p,i)=><div className="account-order-line" key={i}><Link to={`/item/${p.id}/`}>{p.title}</Link><span>{p.quantity} × {p.size}</span></div>)}<p>{o.fname} {o.lname} · {o.state} / {o.city}</p><p>{o.address}</p><p>{t('تلفن','Phone')}: <bdi>{String(o.phone||'').padStart(11,'0')}</bdi> · {t('کد پستی','Postal code')}: <bdi>{String(o.postal_code||'').padStart(10,'0')}</bdi></p>{!o.paid&&<p className="commerce-note">{t('این سفارش پرداخت نشده است. برای هماهنگی با فروشگاه تماس بگیرید.','This order is unpaid. Contact the store to arrange the next steps.')}</p>}<Link className="commerce-text-button" to="/contact-us/">{t('ارتباط درباره سفارش','Contact us about this order')} ↗</Link></div></details>)}</div>)}
+    {data&&Page==='address'&&<><div className="account-section-actions"><p>{data.addresses.length} {t('نشانی ذخیره شده','saved addresses')}</p><Link className="commerce-primary" to="/dashboard/address/add/">＋ {t('نشانی جدید','Add an address')}</Link></div>{!data.addresses.length?<div className="account-empty"><h3>{t('نشانی شما، آماده سفارش بعدی','Ready for your next delivery')}</h3><p>{t('نشانی خود را ذخیره کنید تا ثبت سفارش سریع‌تر شود.','Save an address to make checkout easier next time.')}</p></div>:<div className="account-address-grid">{data.addresses.map(a=><article key={a.id}><p className="commerce-eyebrow">DELIVERY ADDRESS</p><h3>{a.fname} {a.lname}</h3><p>{a.state} / {a.city}</p><p>{a.address}</p><small><bdi>{a.phone_number}</bdi> · <bdi>{a.postal_code}</bdi></small><div className="account-address-actions"><Link to={`/dashboard/address/edit/${a.id}/`}>{t('ویرایش','Edit')}</Link><button disabled={busy} onClick={()=>setRemove(a.id)}>{t('حذف','Remove')}</button></div>{remove===a.id&&<div className="account-remove-confirm"><p>{t('این نشانی حذف شود؟','Remove this address?')}</p><button disabled={busy} onClick={()=>deleteAddress(a.id)}>{busy?t('در حال حذف…','Removing…'):t('حذف نشانی','Remove address')}</button><button disabled={busy} onClick={()=>setRemove(null)}>{t('انصراف','Cancel')}</button></div>}</article>)}</div>}</>}
+    </>}
+  </AccountLayout>;
+}
