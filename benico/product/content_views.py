@@ -14,19 +14,19 @@ from rest_framework.response import Response
 from .models import StoreContent, ContentImage
 
 DEFAULT_CONTENT = {
-    'hero': {'eyebrow': 'THE BENICO EDIT', 'title_fa': 'فراتر از روزمره', 'title_en': 'Beyond the everyday',
-             'button_fa': 'کشف مجموعه', 'button_en': 'Explore the collection', 'link': '/products/t-shirt/1/',
-             'image': '', 'alt_fa': 'تیشرت بنیکو با طرح سیاره', 'alt_en': 'Benico planet graphic T-shirt', 'position': 'center'},
-    'intro': {'title_fa': 'بیان تازه‌ای از استایل شما', 'title_en': 'Wear your own perspective',
-              'text_fa': 'طرح‌هایی برای بیان شخصیت شما. مجموعه بنیکو را کشف کنید.', 'text_en': 'Individual expression, everyday essentials. Discover Benico.'},
-    'editorial_one': {'eyebrow': 'THE INFINITE EDIT', 'title_fa': 'تیشرت‌ها', 'title_en': 'The T-shirt edit',
+    'hero': {'eyebrow': 'THE BENICO EDIT', 'title_fa': 'روزمره را به سبک خودت بپوش', 'title_en': 'Beyond the everyday',
+             'button_fa': 'دیدن مجموعه', 'button_en': 'Explore the collection', 'link': '/products/t-shirt/1/',
+             'image': '', 'alt_fa': 'استایل بنیکو روی صندلی کرومی در استودیوی خاکستری', 'alt_en': 'Benico floating outfit on a chrome chair in a gray studio', 'position': 'center'},
+    'intro': {'title_fa': 'ساده بپوش. خودت باش.', 'title_en': 'Wear your own perspective',
+              'text_fa': 'تی‌شرت، هودی و دورس؛ برای ترکیب‌های ساده و روزهایی که می‌خواهی خودت باشی. از مجموعه‌های بنیکو، چیزی را انتخاب کن که به سلیقه‌ات نزدیک است.', 'text_en': 'Individual expression, everyday essentials. Discover Benico.'},
+    'editorial_one': {'eyebrow': 'THE INFINITE EDIT', 'title_fa': 'تی‌شرت‌های بنیکو', 'title_en': 'The T-shirt edit',
                       'button_fa': 'مشاهده مجموعه', 'button_en': 'Discover the collection', 'link': '/products/t-shirt/1/', 'image': '',
-                      'alt_fa': 'تیشرت Infinite بنیکو', 'alt_en': 'Benico Infinite T-shirt', 'enabled': True},
-    'editorial_two': {'eyebrow': 'A DIFFERENT PERSPECTIVE', 'title_fa': 'استایل، به شیوه شما', 'title_en': 'Style, your way',
-                      'button_fa': 'کشف محصول', 'button_en': 'Explore the piece', 'link': '/item/7000/', 'image': '',
-                      'alt_fa': 'استایل بنیکو', 'alt_en': 'Benico campaign styling', 'enabled': True},
-    'story': {'eyebrow': 'THE WORLD OF BENICO', 'title_fa': 'شخصیت شما، امضای شما.', 'title_en': 'Your personality. Your signature.',
-              'button_fa': 'ارتباط با بنیکو', 'button_en': 'Meet Benico', 'link': '/contact-us/', 'enabled': True},
+                      'alt_fa': 'تی‌شرت Infinite بنیکو', 'alt_en': 'Benico Infinite T-shirt', 'enabled': True},
+    'editorial_two': {'eyebrow': 'IN THE DETAILS', 'title_fa': 'جزئیات، از نزدیک', 'title_en': 'A closer look',
+                      'button_fa': 'دیدن محصول', 'button_en': 'Explore the piece', 'link': '/item/7000/', 'image': '',
+                      'alt_fa': 'نمای نزدیک طرح سیاره و بافت پارچه', 'alt_en': 'Close-up of the Saturn print and cotton texture', 'enabled': True},
+    'story': {'eyebrow': 'THE WORLD OF BENICO', 'title_fa': 'سلیقهٔ تو، امضای استایل تو.', 'title_en': 'Your personality. Your signature.',
+              'button_fa': 'گفت‌وگو با بنیکو', 'button_en': 'Meet Benico', 'link': '/contact-us/', 'enabled': True},
 }
 
 def content_payload(record=None):

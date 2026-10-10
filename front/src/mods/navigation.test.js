@@ -1,0 +1,53 @@
+import {render,screen,fireEvent,act,within} from '@testing-library/react';
+import {LanguageProvider} from '../language';
+import Nav from './nav';
+import SearchBar from './searchbar';
+beforeEach(() => {
+  document.cookie = 'Lang=en; path=/';
+  Object.defineProperty(window,'scrollY',{value:0,writable:true,configurable:true});
+  global.fetch = jest.fn(() => Promise.resolve({ok:true,json:async () => ({data:[],results:[]})}));
+});
+afterEach(() => {jest.useRealTimers(); delete global.fetch;});
+const mount = element => render(<LanguageProvider>{element}</LanguageProvider>);
+test('search flyout focuses input, traps focus, closes with Escape and restores opener',async () => {
+  mount(<Nav/>);
+  const trigger = screen.getByRole('button',{name:'Search',exact:true});
+  fireEvent.click(trigger);
+  await act(async () => {});
+  expect(screen.getByRole('searchbox')).toHaveFocus();
+  expect(document.body.style.overflow).toBe('hidden');
+  const close = screen.getByRole('button',{name:'Close search'});
+  close.focus(); fireEvent.keyDown(document,{key:'Tab',shiftKey:true});
+  expect(within(screen.getByRole('dialog')).getByRole('link',{name:'Contact us',exact:true})).toHaveFocus();
+  fireEvent.keyDown(document,{key:'Escape'});
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+  expect(document.body.style.overflow).toBe('');
+});
+test('header hides scrolling down, returns scrolling up and stays visible at the top',() => {
+  const {container} = mount(<Nav/>);
+  window.scrollY = 300; fireEvent.scroll(window);
+  expect(container.querySelector('header')).toHaveClass('nav-scrolled','nav-hidden');
+  window.scrollY = 270; fireEvent.scroll(window);
+  expect(container.querySelector('header')).not.toHaveClass('nav-hidden');
+  window.scrollY = 0; fireEvent.scroll(window);
+  expect(container.querySelector('header')).not.toHaveClass('nav-scrolled');
+});
+test('search debounces input and ignores an older response arriving after the current query',async () => {
+  jest.useFakeTimers();
+  const pending = {};
+  global.fetch = jest.fn(url => url.includes('/recommend/') ? Promise.resolve({ok:true,json:async () => ({data:[]})}) : new Promise(resolve => {pending[url] = resolve;}));
+  mount(<SearchBar/>); await act(async () => {});
+  const input = screen.getByRole('searchbox');
+  fireEvent.change(input,{target:{value:'old'}});
+  act(() => jest.advanceTimersByTime(250));
+  fireEvent.change(input,{target:{value:'new'}});
+  act(() => jest.advanceTimersByTime(250));
+  await act(async () => {pending['/product/search/?q=new']({ok:true,json:async () => ({results:[{id:9000,title:'Current tee',image:[]}]})});});
+  expect(screen.getByRole('link',{name:/Current tee/})).toHaveAttribute('href','/item/9000/');
+  await act(async () => {pending['/product/search/?q=old']({ok:true,json:async () => ({results:[{id:9001,title:'Stale tee',image:[]}]})});});
+  expect(screen.queryByText('Stale tee')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Clear search'}));
+  expect(input).toHaveValue('');
+  expect(screen.queryByText('Current tee')).not.toBeInTheDocument();
+});

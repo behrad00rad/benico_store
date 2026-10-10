@@ -1,9 +1,12 @@
 import copy
 import io
 import tempfile
+import importlib
 from pathlib import Path
 from PIL import Image
 from django.conf import settings
+from django.apps import apps
+from django.db import connection
 from django.test import TestCase, override_settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -21,6 +24,20 @@ class ContentManagementTests(TestCase):
 
     def authorize(self,token):
         self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
+
+    def test_copy_refresh_preserves_custom_content_and_runs_once(self):
+        migration = importlib.import_module('product.migrations.0013_refresh_persian_store_copy')
+        content = copy.deepcopy(DEFAULT_CONTENT)
+        content['story']['title_fa'] = 'شخصیت شما، امضای شما.'
+        content['hero']['title_fa'] = 'مجموعه اختصاصی'
+        record = StoreContent.objects.create(content=content, revision=3)
+        editor = connection.schema_editor(atomic=False)
+        migration.refresh_copy(apps, editor)
+        migration.refresh_copy(apps, editor)
+        record.refresh_from_db()
+        self.assertEqual(record.content['hero']['title_fa'], 'مجموعه اختصاصی')
+        self.assertEqual(record.content['story']['title_fa'], DEFAULT_CONTENT['story']['title_fa'])
+        self.assertEqual(record.revision, 4)
 
     def test_defaults_are_public_and_writes_require_staff(self):
         self.assertEqual(self.client.get('/product/content/').data['content'],DEFAULT_CONTENT)

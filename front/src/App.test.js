@@ -55,3 +55,17 @@ test('collection menu opens and closes', async () => {
   fireEvent.click(screen.getByRole('button', {name: 'بستن منو'}));
   expect(screen.queryByRole('navigation', {name: 'دسته بندی محصولات'})).not.toBeInTheDocument();
 });
+
+test('contact page translates its content and preserves working contact links', () => {
+  window.history.replaceState({}, '', '/contact-us/');
+  render(<App />);
+  expect(screen.getByRole('heading', {name: 'از شما می‌شنویم.'})).toBeInTheDocument();
+  expect(screen.getByRole('link', {name: /نوشتن ایمیل/})).toHaveAttribute('href', 'mailto:benico.clothing@gmail.com');
+  const switcher = screen.getByRole('button', {name: 'Switch to English'});
+  expect(switcher).toHaveTextContent('فا/eng');
+  fireEvent.click(switcher);
+  expect(screen.getByRole('heading', {name: 'We’re listening.'})).toBeInTheDocument();
+  expect(screen.getByRole('link', {name: /Open Telegram/})).toHaveAttribute('href', 'https://t.me/benico_clothing');
+  expect(screen.queryByText('از شما می‌شنویم.')).not.toBeInTheDocument();
+  window.history.replaceState({}, '', '/');
+});

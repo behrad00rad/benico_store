@@ -1,0 +1,58 @@
+[
+  {
+    "name": "infinite",
+    "cutoutPrompt": "Use case: background-extraction. Asset type: transparent PNG product cutout for a full-screen fashion gallery. Edit target: the supplied garment photograph. Remove ONLY the gray background and ground shadow. Preserve the entire garment exactly: original front-facing pose, folds, silhouette, fabric colors, neckline, sleeves, seams and printed artwork/text. Do not restyle or redraw the print. Keep full garment uncropped. Output a genuine transparent RGBA image with a tight bounding canvas and 4 percent clear margin on every side, crisp natural anti-aliased fabric edges. No opaque background, no checkerboard baked into pixels, no props, hanger, person, typography overlay or shadow outside the garment.",
+    "tool": "built-in imagegen",
+    "mode": "reference image edit",
+    "transparentBackground": {
+      "cutout": true,
+      "model": false
+    },
+    "outputAssets": [
+      "infinite-cutout-v2.png",
+      "infinite-model-v2.webp"
+    ]
+  },
+  {
+    "name": "savior",
+    "cutoutPrompt": "Use case: background-extraction. Asset type: transparent PNG product cutout for a full-screen fashion gallery. Edit target: the supplied garment photograph. Remove ONLY the gray background and ground shadow. Preserve the entire garment exactly: original front-facing pose, folds, silhouette, fabric colors, neckline, sleeves, seams and printed artwork/text. Do not restyle or redraw the print. Keep full garment uncropped. Output a genuine transparent RGBA image with a tight bounding canvas and 4 percent clear margin on every side, crisp natural anti-aliased fabric edges. No opaque background, no checkerboard baked into pixels, no props, hanger, person, typography overlay or shadow outside the garment.",
+    "tool": "built-in imagegen",
+    "mode": "reference image edit",
+    "transparentBackground": {
+      "cutout": true,
+      "model": false
+    },
+    "outputAssets": [
+      "savior-cutout-v2.png",
+      "savior-model-v2.webp"
+    ]
+  },
+  {
+    "name": "xray",
+    "cutoutPrompt": "Use case: background-extraction. Asset type: transparent PNG product cutout for a full-screen fashion gallery. Edit target: the supplied garment photograph. Remove ONLY the gray background and ground shadow. Preserve the entire garment exactly: original front-facing pose, folds, silhouette, fabric colors, neckline, sleeves, seams and printed artwork/text. Do not restyle or redraw the print. Keep full garment uncropped. Output a genuine transparent RGBA image with a tight bounding canvas and 4 percent clear margin on every side, crisp natural anti-aliased fabric edges. No opaque background, no checkerboard baked into pixels, no props, hanger, person, typography overlay or shadow outside the garment.",
+    "tool": "built-in imagegen",
+    "mode": "reference image edit",
+    "transparentBackground": {
+      "cutout": true,
+      "model": false
+    },
+    "outputAssets": [
+      "xray-cutout-v2.png",
+      "xray-model-v2.webp"
+    ]
+  },
+  {
+    "name": "navy",
+    "cutoutPrompt": "Use case: background-extraction. Asset type: transparent PNG product cutout for a full-screen fashion gallery. Edit target: the supplied garment photograph. Remove ONLY the gray background and ground shadow. Preserve the entire garment exactly: original front-facing pose, folds, silhouette, fabric colors, neckline, sleeves, seams and printed artwork/text. Do not restyle or redraw the print. Keep full garment uncropped. Output a genuine transparent RGBA image with a tight bounding canvas and 4 percent clear margin on every side, crisp natural anti-aliased fabric edges. No opaque background, no checkerboard baked into pixels, no props, hanger, person, typography overlay or shadow outside the garment.",
+    "tool": "built-in imagegen",
+    "mode": "reference image edit",
+    "transparentBackground": {
+      "cutout": true,
+      "model": false
+    },
+    "outputAssets": [
+      "navy-cutout-v2.png",
+      "navy-model-v2.webp"
+    ]
+  }
+]

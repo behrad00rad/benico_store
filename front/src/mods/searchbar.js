@@ -1,65 +1,51 @@
-// src/App.js
-import React, { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 import {useLanguage} from '../language';
-
-const SearchBar = () => {
+import {getProductMedia} from './product-media';
+export default function SearchBar() {
   const {t} = useLanguage();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [Results, setResults] = useState([]);
-
-  const handleInputChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
+  const [query,setQuery] = useState(''), [results,setResults] = useState([]), [suggestions,setSuggestions] = useState([]), [status,setStatus] = useState('idle'), [revision,setRevision] = useState(0);
   useEffect(() => {
-    const handleSubmit = async () => {
+    const controller = new AbortController();
+    fetch('/product/recommend/',{signal:controller.signal}).then(r => {if (!r.ok) throw Error(); return r.json();}).then(data => {if (!controller.signal.aborted) setSuggestions((data.data || []).slice(0,3));}).catch(() => {});
+    return () => controller.abort();
+  },[]);
+  useEffect(() => {
+    const term = query.trim();
+    if (!term) {setResults([]); setStatus('idle'); return;}
+    const controller = new AbortController();
+    setStatus('loading'); setResults([]);
+    const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`/product/search/?q=${encodeURIComponent(searchTerm)}`);
+        const response = await fetch(`/product/search/?q=${encodeURIComponent(term)}`,{signal:controller.signal});
+        if (!response.ok) throw Error();
         const data = await response.json();
-
-        setResults(data.results);
-      } catch (error) {
-        console.error('Error fetching search results:', error);
-      }
-    };
-
-    handleSubmit();
-  }, [searchTerm]);
-
-  return (
-    <div className="relative w-full z-50">
-      <form onSubmit={event => event.preventDefault()} className="rounded-full flex items-center w-full font-yek">
-        <input
-          type="text"
-          placeholder={t('جستجوی محصول…', 'Search products…')}
-          aria-label={t('جستجوی محصول', 'Search products')}
-          value={searchTerm}
-          onChange={handleInputChange}
-          className="bg-secondary p-4 focus:outline-none rounded-tl w-full text-end"
-        />
-        <div className="p-4 bg-secondary rounded-tr">
-          <svg className="w-fit" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"
-              fill="rgba(255,255,255,1)"
-            ></path>
-          </svg>
-        </div>
+        if (!controller.signal.aborted) {setResults(data.results || []); setStatus('ready');}
+      } catch (error) {if (!controller.signal.aborted) setStatus('error');}
+    },250);
+    return () => {clearTimeout(timer); controller.abort();};
+  },[query,revision]);
+  const categories = [['/products/t-shirt/1/','تی‌شرت','T-shirts'],['/products/hoodie/1/','هودی','Hoodies'],['/products/sweatshirt/1/','دورس','Sweatshirts']];
+  const pieces = query.trim() ? results : suggestions;
+  return <div className="benico-search">
+    <div className="search-heading"><label htmlFor="benico-search-input">{t('جستجو برای','Search for')}</label>
+      <form role="search" onSubmit={event => event.preventDefault()} className="search-input-row">
+        <input id="benico-search-input" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('نام محصول یا کد آن','Name or product code')} aria-label={t('جستجوی محصول','Search products')}/>
+        {query && <button type="button" onClick={() => setQuery('')} aria-label={t('پاک کردن جستجو','Clear search')}>×</button>}
+        <button type="submit" aria-label={t('جستجوی مجموعه','Search collection')}>→</button>
       </form>
-      {Results.length > 0 && (
-        <div className="absolute top-16 left-0 w-full bg-white shadow-md">
-          {Results.map((res) => (
-            <a href={'/item/'+res.id} key={res.id} className=" justify-between transition-all hover:text-base-100 bg-secondary w-full h-1/2 p-4  flex items-center hover:bg-accent">
-              {res.image?.length > 0 && <img src={`/image/item/${res.image[0]}/`} alt={res.title} className="w-16 h-16 mr-4 bg-white" />}
-              <span>{res.title}</span>
-              <span> #{res.id}</span>
-            </a>
-          ))}
-        </div>
-      )}
-      {searchTerm && Results.length === 0 && <p className="ui-message">{t('محصولی یافت نشد.', 'No products found.')}</p>}
+      <div className="search-trending"><span>{t('دسته‌های محبوب','Explore categories')}</span>{categories.map(([href,fa,en]) => <a href={href} key={href}>{t(fa,en)}</a>)}</div>
     </div>
-  );
-};
-
-export default SearchBar;
+    <div className="search-body">
+      <aside className="search-discover"><p className="nav-kicker">{t('مجموعه‌های بنیکو','COLLECTIONS')}</p>{categories.map(([href,fa,en]) => <a href={href} key={href}>{t(fa,en)}</a>)}<p className="nav-kicker">{t('بیشتر از بنیکو','MORE FROM BENICO')}</p><a href="/products/">{t('همه محصولات','All pieces')}</a><a href="/contact-us/">{t('تماس با ما','Contact us')}</a></aside>
+      <div className="search-product-area">
+        <p className="nav-kicker">{query.trim() ? t('نتایج جستجو','SEARCH RESULTS') : t('منتخب بنیکو','THE BENICO EDIT')}</p>
+        <div aria-live="polite" aria-atomic="true" className="search-status">{status === 'loading' ? t('در حال جستجو…','Searching…') : status === 'ready' ? results.length ? t(`${results.length} محصول پیدا شد`,`${results.length} ${results.length === 1 ? 'piece' : 'pieces'} found`) : t('محصولی پیدا نشد. نام دیگری یا کد محصول را امتحان کن.','No pieces found. Try another name or product code.') : status === 'error' ? t('جستجو انجام نشد. دوباره امتحان کن.','Search could not load. Please try again.') : ''}</div>
+        {status === 'error' && <button className="search-retry" onClick={() => setRevision(value => value + 1)}>{t('تلاش دوباره','Try again')}</button>}
+        {!!pieces.length && (status === 'ready' || status === 'idle') && <div className="search-results">{pieces.map(product => {
+          const image = getProductMedia({...product,images:product.image || product.images || []})[0];
+          return <a href={`/item/${product.id}/`} className="search-result" key={product.id}>{image && <div><img src={image.src} alt=""/></div>}<p>{product.title}</p><span>{t('کد','Style')} {product.id} <span aria-hidden="true">↗</span></span></a>;
+        })}</div>}
+      </div>
+    </div>
+  </div>;
+}
