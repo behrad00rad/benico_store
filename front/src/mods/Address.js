@@ -3,11 +3,12 @@ import Cookies from "universal-cookie";
 import { ThemeContext } from "./themeprovider";
 const cookies = new Cookies();
 const token = cookies.getAll().token;
-const isFarsi = cookies.getAll().Lang === 'fa';
+
 
 
 
 const Address = () => {
+  const isFarsi = new Cookies().get('Lang') !== 'en';
   const theme = useContext(ThemeContext);
   const [inverted,setin] = useState()
   useEffect(()=>{setin(theme == "benidark" ? " " : "invert" )},[theme])
@@ -55,11 +56,11 @@ const Address = () => {
 
       
       const Addd = (props) => {
+        const isFarsi = new Cookies().get('Lang') !== 'en';
         const theme = useContext(ThemeContext);
         const [inverted,setin] = useState()
         useEffect(()=>{setin(theme == "benidark" ? " " : "invert" )},[theme])
         const { data } = props;
-        console.log(data);
         const [loading,setLoading] = useState('opacity-0')
         const handleDelete = async () => {
           try {
@@ -96,11 +97,9 @@ const Address = () => {
               >{isFarsi?'ویرایش':'edit'}
             </a>
             <span className={"loading loading-spinner loading-lg "+loading}></span>
-            <div className="flex-col flex w-full h-full p-4 justify-end items-end text-right">
-              <h1 className="text-2xl">{`${data.fname} ${data.lname}`}</h1>
-              <span className="text-sm font-extralight">{`${isFarsi ? 'شهر' : 'city'}:${data.city} | ${
-                isFarsi ? 'استان' : 'state'
-              }:${data.state}`}</span>
+            <div className="flex-col flex w-fit h-full p-4 justify-end items-end text-right">
+              <h1 className="sm:text-2xl text-sm">{`${data.fname} ${data.lname}`}</h1>
+              <span className="text-xs sm:text-sm font-extralight">{`${data.state} , ${data.city}`}</span>
             </div>
           </div>
         );

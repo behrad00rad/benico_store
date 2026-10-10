@@ -1,147 +1,45 @@
-import React, { useContext, useEffect, useState } from 'react';
-import logo from '../logo.png';
-import Cookies from 'universal-cookie';
-import { ThemeContext } from './themeprovider';
+import {useLanguage} from '../language';
+import React, {useEffect, useState} from 'react';
+import Nav from './nav';
+import {useStoreMotion, tiltCard, resetTilt} from './motion';
 import Prod from './prods';
 import Footer from './Footer';
-import Nav from './nav';
-
-// Define your translated texts here
-const translatedTexts = {
-  en: {
-    tshirt: 'T-shirts',
-    hoodie: 'Hoodies',
-    languageModal: 'Language',
-    english: 'English',
-    farsi: 'فارسی',
-  },
-  fa: {
-    tshirt: 'تی‌شرت',
-    hoodie: 'هودی',
-    languageModal: 'زبان',
-    english: 'انگلیسی',
-    farsi: 'فارسی',
-  },
-};
-
-const MAINURL = 'http://127.0.0.1:2000';
-
-const Main = () => {
-  const theme = useContext(ThemeContext);
-  const cookies = new Cookies();
-  const [isScrolledDown, setIsScrolledDown] = useState(false);
-  const [inverted, setInverted] = useState(theme === 'benidark' ? '' : 'invert');
+import campaign from '../assets/campaign.png';
+import infinite from '../assets/infinite.jpg';
+export default function Main() {
+  const {t, lang} = useLanguage();
+  const motionRef = useStoreMotion();
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [Data, setData] = useState([]);
-  const uuidA = '6d3c6b0f-8470-4f3a-a213-ffde2b95e70a';
-  const uuidC = '29924df9-1786-4b0d-a40e-7cf4b7df52d3';
-  const isFarsi = cookies.getAll().Lang === 'fa';
-  const handleScroll = () => {
-    setIsScrolledDown(window.scrollY > 200);
-  };
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    const controller = new AbortController();
+    fetch('http://127.0.0.1:2000/product/recommend/', {signal:controller.signal})
+      .then(r => {if (!r.ok) throw new Error('Request failed'); return r.json();})
+      .then(catalog => {if (!controller.signal.aborted) setProducts(catalog.data);})
+      .catch(e => {if (e.name !== 'AbortError') setError(true);})
+      .finally(() => {if (!controller.signal.aborted) setLoading(false);});
+    return () => controller.abort();
   }, []);
-
-  useEffect(() => {
-    if (cookies.get('Lang') === undefined) {
-      window.my_modal_5.showModal();
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  useEffect(() => {
-    const renderProducts = async () => {
-      if (products.length > 0 && Array.isArray(products)) {
-        const newComponents = products.map((product) => (
-          <Prod key={product.productId} prod={product} />
-        ));
-        setData((oldP) => [...oldP, ...newComponents]);
-      } else {
-        setData([]);
-      }
-    };
-    renderProducts();
-  }, [products]);
-
-  const fetchProducts = async () => {
-    if (products.length > 0) return;
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${MAINURL}/product/recommend/`);
-      const data = await response.json();
-      setProducts(data.data);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setIsLoading(false);
-    }
-  };
-
-  const handleLangSelect = (lang) => {
-    cookies.set('Lang', lang);
-    window.location.reload(); // Reload the page to apply the selected language
-  };
-
-  // Get the selected language from cookies or default to English
-  const selectedLang = cookies.getAll().Lang || 'en';
-  const texts = translatedTexts[selectedLang];
-
-  return (
-    <div className={`min-w-screen  2xl:px-96 2xl:py-52 ${isFarsi?'':'font-thin'}  ${isFarsi?'font-yek':'font-mont'} `}>
-      <div className={`w-full fixed top-0  transition-all 2xl:px-96 ease-linear left-0 z-50 ${
-        isScrolledDown ? ' opacity-1 ' : ' opacity-0 '
-      } `}>
-        <Nav />
-      </div>
-      <div className='bg-base-100 text-accent space-y-10' data-theme={theme}>
-        <div className={`items-center m-0 flex flex-col justify-center mt-12 ${inverted}`}>
-          <img
-            src={logo}
-            className={`${
-              isScrolledDown ? ' opacity-0 ' : ' opacity-1'
-            }  transition-all ease-linear `}
-            alt='Logo'
-          />
-        </div>
-        <div className='flex min-w-screen object-cover sm:p-4 sm:gap-2 flex-col sm:flex-row '>
-          <a className='sm:w-1/2 relative bg-black ' href='/products/t-shirt/1'>
-            <img
-              src={`http://127.0.0.1:2000/image/item/${uuidA}`}
-              alt='Item A'
-              className='opacity-60 hover:opacity-40 ease-linear transition-all '
-            />
-            <p className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl text-white font-bold '>
-              {texts.tshirt}
-            </p>
-          </a>
-          <a className='sm:w-1/2 relative bg-black ' href='/products/hoodie/1'>
-            <img
-              src={`http://127.0.0.1:2000/image/item/${uuidC}`}
-              alt='Item C'
-              className='opacity-60 hover:opacity-40 ease-linear transition-all '
-            />
-            <p className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl text-white font-bold'>
-              {texts.hoodie}
-            </p>
-          </a>
-        </div>
-        <div className='divider divider-vertical'></div>
-        <div className='p-4 grid grid-cols-1 sm:grid-cols-4 gap-5 grid-rows-1 min-w-screen '>
-          {Data}
-        </div>
-        <Footer />
-      </div>
-    </div>
-  );
-};
-
-export default Main;
+  return <main className="lux-home" ref={motionRef}><div className="reading-progress" aria-hidden="true"/>
+    <nav className="walkthrough-nav" aria-label={t('مسیر کشف مجموعه', 'Collection walkthrough')}><a href="#campaign">01 <span>{t('شروع', 'The edit')}</span></a><a href="#collections">02 <span>{t('مجموعه', 'Collection')}</span></a><a href="#pieces">03 <span>{t('محصولات', 'Pieces')}</span></a></nav>
+    <section id="campaign" data-chapter className="lux-campaign">
+      <img className="lux-campaign-image" src={campaign} alt={t('تیشرت بنیکو با طرح سیاره', 'Benico planet graphic T-shirt')} fetchpriority="high" />
+      <Nav campaign />
+      <div className="lux-campaign-copy" dir={lang === 'fa' ? 'rtl' : 'ltr'}><p className="lux-eyebrow">THE BENICO EDIT</p><h1>{t('فراتر از روزمره', 'Beyond the everyday')}</h1><a className="lux-button" href="/products/t-shirt/1/">{t('کشف مجموعه', 'Explore the collection')}</a></div>
+      <a className="lux-scroll" href="#collections">{t('برای کشف بیشتر', 'SCROLL TO DISCOVER')} <span>↓</span></a>
+    </section>
+    <div className="brand-ticker" aria-hidden="true"><div>{Array.from({length: 4}, (_, i) => <span key={i}>BENICO <i>✳</i> WEAR YOUR PERSPECTIVE <i>✳</i> BE YOURSELF <i>✳</i> </span>)}</div></div>
+    <section data-reveal data-chapter className="lux-intro" id="collections" dir={lang === 'fa' ? 'rtl' : 'ltr'}><p className="lux-eyebrow">02 / BENICO CLOTHING</p><h2>{t('بیان تازه\u200cای از استایل شما', 'Wear your own perspective')}</h2><p>{t('طرح\u200cهایی برای بیان شخصیت شما. مجموعه بنیکو را کشف کنید.', 'Individual expression, everyday essentials. Discover Benico.')}</p></section>
+    <section className="lux-editorial-grid">
+      <a data-reveal onPointerMove={tiltCard} onPointerLeave={resetTilt} className="lux-editorial" href="/products/t-shirt/1/"><img src={infinite} alt={t('تیشرت Infinite بنیکو', 'Benico Infinite T-shirt')} loading="lazy"/><div dir={lang === 'fa' ? 'rtl' : 'ltr'}><p className="lux-eyebrow">THE INFINITE EDIT</p><h2>{t('تیشرت\u200cها', 'The T-shirt edit')}</h2><span>{t('مشاهده مجموعه', 'Discover the collection')}</span></div></a>
+      <a data-reveal onPointerMove={tiltCard} onPointerLeave={resetTilt} className="lux-editorial lux-editorial-photo" href="/item/7000/"><img src={campaign} alt={t('نمای استایل با تیشرت بنیکو', 'Benico campaign styling')} loading="lazy"/><div dir={lang === 'fa' ? 'rtl' : 'ltr'}><p className="lux-eyebrow">A DIFFERENT PERSPECTIVE</p><h2>{t('استایل، به شیوه شما', 'Style, your way')}</h2><span>{t('کشف محصول', 'Explore the piece')}</span></div></a>
+    </section>
+    <section id="pieces" data-chapter className="lux-selection"><div data-reveal className="lux-section-heading" dir={lang === 'fa' ? 'rtl' : 'ltr'}><p className="lux-eyebrow">03 / SELECTED FOR YOU</p><h2>{t('آخرین محصولات', 'Latest pieces')}</h2></div>
+      {loading ? <p className="ui-message" role="status">{t('در حال بارگذاری محصولات…', 'Loading the collection…')}</p> : error ? <p className="ui-message" role="alert">{t('محصولات بارگذاری نشدند. لطفاً صفحه را دوباره بارگذاری کنید.', 'We could not load the collection. Please refresh to try again.')}</p> : products.length ? <div className="home-products">{products.map(product => <Prod key={product.id} prod={product} />)}</div> : <p className="ui-message">{t('محصولی یافت نشد.', 'No products found.')}</p>}
+      <a className="lux-text-link" href="/products/">{t('مشاهده همه محصولات', 'View all products')}</a>
+    </section>
+    <section data-reveal className="lux-story" dir={lang === 'fa' ? 'rtl' : 'ltr'}><p className="lux-eyebrow">THE WORLD OF BENICO</p><h2>{t('شخصیت شما، امضای شما.', 'Your personality. Your signature.')}</h2><a className="lux-button lux-button-dark" href="/contact-us/">{t('ارتباط با بنیکو', 'Meet Benico')}</a></section>
+    <Footer />
+  </main>;
+}

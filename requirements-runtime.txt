@@ -1,0 +1,6 @@
+# Minimal dependencies used by this Django application.
+Django==4.2.2
+djangorestframework==3.14.0
+django-cors-headers==4.2.0
+Pillow==11.3.0
+requests==2.34.2

@@ -1,8 +1,10 @@
+import {useLanguage} from '../language';
 import { useEffect, useState } from "react";
 import Cookies from "universal-cookie";
 
 
 const Adetail = () => {
+  const {t} = useLanguage();
     const cookies = new Cookies()
     const isFarsi = cookies.getAll().Lang === 'fa';
     const [Data,setData] = useState()
@@ -17,7 +19,8 @@ const Adetail = () => {
                 },
                 body: JSON.stringify({token:cookies.getAll().token}),
             });
-          const data = await response.json();   
+          const data = await response.json();  
+          console.log(data) 
           setData(data)
         } catch (error) {
           console.error('Error fetching products:', error);
@@ -25,54 +28,23 @@ const Adetail = () => {
     };
     fetchProducts()
 },[])
-console.log(Data)
+
 
 
     return(
     <div className={` overflow-x-auto ${isFarsi?'font-yek':' font-mont font-thin '}`}>
-      <div className="sm:border-2 sm:border-neutral  flex flex-col items-center justify-center">
+      <div className=" flex flex-col items-center justify-center">
         <h1 className="font-bold m-5 text-xl ">{isFarsi?'اطلاعات حساب':'Account information'}</h1>
-    <table className="table text-accent ">
+    <table className="table text-accent text-end ">
       {/* head */}
-      <tbody>
-        {/* row 1 */}
-        <tr className="bg-neutral bg-opacity-40 "  >
-          <td>
-            <div className="flex items-center space-x-3">
-              <div>
-                <div className="">{isFarsi? Data ? `${Data.fname} ${Data.lname}` : '--':'Name'}</div>
-              </div>
-            </div>
-          </td>
-          <td>
-          {!isFarsi? Data? `${Data.fname} ${Data.lname}` : '--':'نام'}
-          </td>
+      <tbody className="bg-secondary">
+        <tr>
+          <td>{Data?`${Data.fname}  ${Data.lname} `:"--"}</td>
+          <td>{t('نام و نام خانوادگی', 'Full name')}</td>
         </tr>
-        {/* row 2 */}
-        <tr className=""  >
-          <td>
-            <div className="flex items-center space-x-3">
-              <div>
-                <div className="">{isFarsi? Data && Data!==0 ? Data.email : '--':'email'}</div>
-              </div>
-            </div>
-          </td>
-          <td>
-          {!isFarsi? Data && Data!==0 ? Data.email : '--':'ایمیل'}
-          </td>
-        </tr>
-        {/* row 3 */}
-        <tr className="bg-neutral bg-opacity-40"  >
-          <td>
-            <div className="flex items-center space-x-3">
-              <div>
-                <div className="">{isFarsi? Data ? Data.PhoneNum : "--" :'Phone number'}</div>
-              </div>
-            </div>
-          </td>
-          <td>
-          {!isFarsi? Data ? Data.PhoneNum : "--" :'شماره همراه'}
-          </td>
+        <tr>
+          <td>{Data?`${Data.PhoneNum}`:"--"}</td>
+          <td>{t('شماره تلفن', 'Phone number')}</td>
         </tr>
       </tbody>
       

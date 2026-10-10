@@ -1,3 +1,4 @@
+import {useLanguage} from '../language';
 import React, { useState, useEffect, useContext } from 'react';
 import Cookies from "universal-cookie";
 import { ThemeContext } from './themeprovider';
@@ -6,7 +7,10 @@ const token = cookies.getAll().token;
 const isFarsi = cookies.getAll().Lang === 'fa';
 
 const AddAddress = () => {
-    const theme = useContext(ThemeContext);
+  const {t} = useLanguage();
+    const [isdataCorr, setisdataCorr] = useState(true);
+    const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+    const theme = useContext(ThemeContext); 
     const [selectedState, setSelectedState] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [iranData, setIranData] = useState({});
@@ -23,14 +27,57 @@ const AddAddress = () => {
         state:''
     });
 
-    const handleInputChange = (event) => {
+    const [timerStarted, setTimerStarted] = useState(false); 
+    const [added, setAdded] = useState('translate-y-full opacity-0');
+    const [status,setStatus] = useState([' alert-error ','login failed',false]);
     
-        const { name, value } = event.target;
-        setFormData({
-            ...formData,
-            [name]: value,
-        });
-    };
+    const handleInputChange = (event) => {
+      const { name, value } = event.target;
+      
+      if (name === "PostalCode" && !/^\d{10}$/.test(value)) {
+          // Postal code is not a 10-digit number, you can handle this error as needed
+          // For example, display an error message to the user
+          // You can also prevent further processing of the form
+          
+          // or disable the submit button until the input is correct
+          setStatus(['alert-error','کد پستی را به درستی وارد کنید' , false]);
+          setAdded('translate-y-0 opacity-1');
+          setTimerStarted(true);
+          setisdataCorr(true)
+
+        }
+
+        else if (name === "phoneNumber" && !/^\d{11}$/.test(value)) {
+          // Phone number doesn't match the expected format (e.g., 10 digits)
+          // You can handle this error similarly to the Postal Code validation
+          setStatus(['alert-error','شماره تلفن باید 11 رقم باشد' , false]);
+          setAdded('translate-y-0 opacity-1');
+          setTimerStarted(true);
+          setisdataCorr(true)
+
+    }else{
+        setisdataCorr(false)
+    }
+      setFormData({
+          ...formData,
+          [name]: value,
+      });
+  };
+
+    useEffect(() => {
+      let timer;
+      if (timerStarted) {
+        timer = setTimeout(() => {
+          setAdded(' translate-y-full opacity-0');
+          setTimerStarted(false);
+        }, 2000);
+      }
+  
+      return () => {
+        clearTimeout(timer);
+      };
+    }, [timerStarted]);
+
 
     const handleSubmit = async (event) => {
         event.preventDefault(); // Prevent the default form submission behavior
@@ -57,7 +104,25 @@ const AddAddress = () => {
         }
     };
     
+    const requiredFields = ["fname", "lname", "PostalCode", "address", "phoneNumber", "city", "state"];
 
+    // State variable to track whether the submit button should be disabled
+
+  
+    // Validation function to check if all required fields are filled
+    const areAllFieldsFilled = () => {
+      for (const field of requiredFields) {
+        if (!formData[field]) {
+          return false;
+        }
+      }
+      return true;
+    };
+  
+    // Effect to update the submit button state whenever the form data changes
+    useEffect(() => {
+      setIsSubmitDisabled(!areAllFieldsFilled());
+    }, [formData]);
 
     useEffect(() => {
 
@@ -89,11 +154,11 @@ const AddAddress = () => {
 
     return (
         <div className={` flex justify-center flex-col items-center bg-base-100 w-full ${isFarsi?'font-yek':' font-mont font-thin '} p-10 `} data-theme={theme}>
-            <h1 className='text-3xl p-5'>اضافه کردن ادرس</h1>
+            <h1 className='text-3xl p-5'>{t('اضافه کردن ادرس', 'Add address')}</h1>
             <div className=" bg-secondary p-8 rounded shadow-md sm:w-1/2 ">
 
                 <form onSubmit={handleSubmit} >
-                    <div className='grid sm:grid-cols-2 grid-cols-1 gap-2'>
+                    <div className='grid lg:grid-cols-2 grid-cols-1 gap-2'>
                             <div className="mb-4">
                                 <label htmlFor="lname" className="block text-sm  text-accent">{isFarsi?"نام خانوادگی":'Last Name'}</label>
                                 <input
@@ -196,7 +261,13 @@ const AddAddress = () => {
                              <div className="mt-6">
                                 <button
                                     type="submit"
-                                    className="bg-accent text-center items-center flex justify-between text-base-100 border-2 border-base-100 px-4 py-2 w-full rounded-sm hover:bg-base-100 hover:text-accent transition-all "
+                                    className=
+                                    {`bg-accent text-center items-center 
+                                    flex justify-between text-base-100 
+                                    border-2 border-base-100 px-4 py-2
+                                    w-full rounded-sm transition-all
+                                    ${isSubmitDisabled || isdataCorr ? "opacity-30":" hover:text-accent   hover:bg-base-100 "}`}
+                                    disabled={isSubmitDisabled || isdataCorr}
                                 >
                                     <div></div>
                                     <span>
@@ -206,6 +277,22 @@ const AddAddress = () => {
                                 </button>
                            </div>
                 </form>
+            </div>
+            <div 
+            className={
+            `alert transform ${status[0]} ease-in  transition-all
+             duration-300 bottom-0 my-10 left-0 right-0 fixed ${added}`}>
+
+              {!status[2]&& 
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                }
+              {status[2]&&
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                } 
+              <span>{status[1]}</span>
+              {status[2]&&
+                <span className="loading loading-spinner loading-sm"></span>
+                } 
             </div>
         </div>
 

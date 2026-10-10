@@ -1,11 +1,15 @@
+import {useLanguage} from '../language';
 import Cookies from "universal-cookie";
 import { useContext, useEffect, useState } from "react";
 import { ThemeContext } from "./themeprovider";
 const cookies = new Cookies();
 
 const Checkout = () =>{
-    const token = cookies.getAll().token;
-    const isFarsi = cookies.getAll().Lang === 'fa';
+  const {t, lang} = useLanguage();
+  const [isdataCorr, setisdataCorr] = useState(true);
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+  const token = cookies.getAll().token;
+  const isFarsi = cookies.getAll().Lang === 'fa';
     const theme = useContext(ThemeContext);
     const [inverted,setin] = useState()
     useEffect(()=>{setin(theme == "benidark" ? " " : "invert" )},[theme])
@@ -14,6 +18,54 @@ const Checkout = () =>{
     const [selectedState, setSelectedState] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [iranData, setIranData] = useState({});
+    
+    const [timerStarted, setTimerStarted] = useState(false); 
+    const [added, setAdded] = useState('translate-y-full opacity-0');
+    const [status,setStatus] = useState([' alert-error ','login failed',false]);
+    
+    const handleInputChange = (event) => {
+      const { name, value } = event.target;
+      
+        if (name === "PostalCode" && !/^\d{10}$/.test(value)) {
+          // Postal code is not a 10-digit number, you can handle this error as needed
+          // For example, display an error message to the user
+          // You can also prevent further processing of the form
+          
+          // or disable the submit button until the input is correct
+          setStatus(['alert-error',t('کد پستی را به درستی وارد کنید', 'Enter a valid postal code') , false]);
+          setAdded('translate-y-0 opacity-1');
+          setTimerStarted(true);
+          setisdataCorr(true)
+        }
+        else if (name === "phoneNumber" && !/^\d{11}$/.test(value)) {
+          // Phone number doesn't match the expected format (e.g., 10 digits)
+          // You can handle this error similarly to the Postal Code validation
+          setStatus(['alert-error',t('شماره تلفن باید 11 رقم باشد', 'Phone number must contain 11 digits') , false]);
+          setAdded('translate-y-0 opacity-1');
+          setTimerStarted(true);
+          setisdataCorr(true)
+        }
+        else{setisdataCorr(false)}
+      setFormData({
+          ...formData,
+          [name]: value,
+      });
+  };
+
+    useEffect(() => {
+      let timer;
+      if (timerStarted) {
+        timer = setTimeout(() => {
+          setAdded(' translate-y-full opacity-0');
+          setTimerStarted(false);
+        }, 2000);
+      }
+  
+      return () => {
+        clearTimeout(timer);
+      };
+    }, [timerStarted]);
+
 
     useEffect(() => {
 
@@ -23,6 +75,7 @@ const Checkout = () =>{
           .then(data => { setIranData(data)})
           .catch(error => console.error('Error loading data:', error));
   }, []);
+
     const [formData, setFormData] = useState({
         token:token?token:null,
         fname: '',
@@ -32,17 +85,10 @@ const Checkout = () =>{
         phoneNumber: '',
         city:'',
         state:'',
-        products:cookies.getAll().cartData.map((product)=>[product.productId,product.quantity])
+        products:cookies.getAll().cartData.map((product)=>[{productId:product.productId,productQ:product.quantity,productS:product.size}])
     });
 
-    const handleInputChange = (event) => {
-    
-        const { name, value } = event.target;
-        setFormData({
-            ...formData,
-            [name]: value,
-        });
-    };
+  
 
     const handleStateChange = (event) => {
       const state = event.target.value;
@@ -73,16 +119,16 @@ const Checkout = () =>{
       // Assuming that each product has a 'price' property, adjust this according to your actual data structure
       totalPrice += cartItem.price * cartItem.quantity;
     });
-    return (formatNumberWithCommas(totalPrice));
+    return totalPrice;
   };
 
   const calall = () =>{
-    let totalPrice = 0 + DeliveryCost ;
+    let totalPrice = 0 ;
     cookies.getAll().cartData.forEach((cartItem) => {
       // Assuming that each product has a 'price' property, adjust this according to your actual data structure
       totalPrice += (cartItem.price * cartItem.quantity);
     });
-    return (formatNumberWithCommas(totalPrice));
+    return totalPrice;
   }
 
   useEffect(() => {
@@ -107,12 +153,11 @@ const Checkout = () =>{
     const requiredFields = ["fname", "lname", "PostalCode", "address", "phoneNumber", "city", "state"];
 
     // State variable to track whether the submit button should be disabled
-    const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+
   
     // Validation function to check if all required fields are filled
     const areAllFieldsFilled = () => {
       for (const field of requiredFields) {
-         console.log(field,formData[field])
         if (!formData[field]) {
           return false;
         }
@@ -127,7 +172,6 @@ const Checkout = () =>{
 
     const handleSubmit = async (event) => {
       event.preventDefault(); // Prevent the default form submission behavior
-      console.log(formData)
       try {
           const response = await fetch(`http://127.0.0.1:2000/auth/submit_order/`, {
               method: 'POST',
@@ -137,10 +181,18 @@ const Checkout = () =>{
               body: JSON.stringify(formData),
           });
           const res = await response.json();
-          setTimeout(() => {
+          if (response.status === 201) {
+
+            setTimeout(() => {
               // Redirect to another page using the history object
-              window.location.href = '/';
+              cookies.set('cartData',[],{ path: '/' })
+              window.location.href = '/recipte/'+res.order_id+'/';
             }, 1000); // Delay in milliseconds (2 seconds)
+          } else {
+            setStatus(['alert-error', res.error || t('ثبت سفارش ناموفق بود', 'Unable to place order'), false]);
+            setAdded('translate-y-0 opacity-1');
+            setTimerStarted(true);
+          }
           
           // Now you can do something with the 'res' data
       } catch (error) {
@@ -179,7 +231,7 @@ const Checkout = () =>{
                                     }}>
                               <svg className="w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.0007 10.5865L16.9504 5.63672L18.3646 7.05093L13.4149 12.0007L18.3646 16.9504L16.9504 18.3646L12.0007 13.4149L7.05093 18.3646L5.63672 16.9504L10.5865 12.0007L5.63672 7.05093L7.05093 5.63672L12.0007 10.5865Z" fill="rgba(255,255,255,1)"></path></svg>       
                               <span className="text-accent">
-                                خالی کردن
+                                {t('خالی کردن', 'Clear')}
                                 </span>
                               </div> 
                               <form >
@@ -285,11 +337,11 @@ const Checkout = () =>{
                                           </div>
                               </form>
                           </div>
-                          {addresses.length>0?<h2>ادرس هایه شما</h2>:''}
+                          {addresses.length>0?<h2>{t('ادرس هایه شما', 'Your addresses')}</h2>:''}
                           <div className="flex items-start">
-                              <div className="flex w-full gap-3 ">
+                              <div className="grid grid-cols-2 w-full gap-3 ">
                               {addresses.map((data) => (
-                                <div key={data.id} className="bg-secondary hover:bg-opacity-100 bg-opacity-30 flex cursor-pointer transition-all active:bg-accent active:text-base-100 w-1/3 mb-5"
+                                <div key={data.id} className="bg-secondary hover:bg-opacity-100 bg-opacity-30 flex cursor-pointer transition-all active:bg-base-100 active:text-accent mb-5"
                                 onClick={()=>{
                                   setFormData({
                                   token:token?token:null,
@@ -301,21 +353,19 @@ const Checkout = () =>{
                                   email: data.email, 
                                   city: data.city,
                                   state: data.state,
-                                  product_ids:cookies.getAll().cartData.map((product)=>product.productId)
+                                  products:cookies.getAll().cartData.map((product)=>[{productId:product.productId,productQ:product.quantity,productS:product.size}])
 
                               });
+                              setisdataCorr(false)
                               setSelectedCity(data.city)
                               setSelectedState(data.state)
                             
                             }
                               }>    
-                                    <svg className={inverted + 'w-1/3'} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z" fill="rgba(255,255,255,1)"></path></svg>
+                                    <span className=" text-center items-center p-5 truncate w-1/2"> {data.address}</span>
                                     <div className="flex-col flex w-full h-full p-4 justify-end items-end text-right">
-                                      <h1 className="text-2xl">{`${data.fname} ${data.lname}`}</h1>
-                                      <span className="text-sm font-extralight">{`${isFarsi ? 'شهر' : 'city'}:${data.city} | ${
-                                        isFarsi ? 'استان' : 'state'
-                                      }:${data.state}`}</span>
-                                      <span>{data.postal_code}</span>
+                                      <h1 className="text-sm">{`${data.fname} ${data.lname}`}</h1>
+                                      <span className="text-xs font-extralight font-mont" >{data.postal_code}</span>
                                     </div>
                                 </div>          
                                 ))}
@@ -323,27 +373,27 @@ const Checkout = () =>{
                           </div>
                       </div>
                 </div>
-                <div className="p-5 sm:w-2/5">
-                  <div className=" w-full h-full p-5 text-center rounded-sm bg-accent text-base-100">
+                <div className="p-5 sm:w-2/5 w-full h-fit">
+                  <div className=" w-full h-full p-5 flex justify-center flex-col  items-center rounded-sm bg-accent text-base-100">
                     <h1 className="text-xl">{isFarsi?'خلاصه صورت حساب':'Checkout detail'}</h1>
                     <table className="table items-center  justify-between text-right text-sm text-base-100 gap-4">
-                        <thead className="text-base-100">
+                        <thead className="text-base-100">     
                           <tr>
-                            <td>قیمت</td>
-                            <td>تعداد</td>
+                            <td>{t('قیمت', 'Price')}</td>
+                            <td>{t('تعداد', 'Quantity')}</td>
                             <td>{isFarsi?'محصول':'product'}</td>
                           </tr>
                           {cookies.getAll().cartData?cookies.getAll().cartData.map(
-                            (product)=>(
+                            (product)=>( 
                               <tr>
-                                <td>{product.price},000تومان</td>
+                                <td>{Number((product.price) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}</td>
                                 <td>{product.quantity}x</td>
                                 <td className="flex flex-col">
                                   <span>
                                      {product.productId}# {product.title}
                                   </span>
                                   <span className="text-xs text-neutral">
-                                    سایز:{product.size}
+                                    {t('سایز', 'Size')}: {product.size}
 
                                   </span>
                                   </td>
@@ -354,31 +404,47 @@ const Checkout = () =>{
                     </thead>
                     <tbody>
                           <tr>
-                            <td>{calculateTotalPrice()},000تومان</td>
+                            <td>{Number((calculateTotalPrice()) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}</td>
                             <td></td>
                             <td>{isFarsi?'مبلغ کل':'final price'}</td>
                           </tr>
                           <tr>
-                            <td>{DeliveryCost},000تومان</td>
+                            <td>{t('رایگان', 'Free')}</td>
                             <td></td>
                             <td>{isFarsi?'هزینه ارسال':'delivery cost'}</td>
                           </tr>
                           <tr>
-                            <td>{calall()},000تومان</td>
+                            <td>{Number((calall()) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}</td>
                             <td></td>
-                            <td>مبلغ قابل پرداخت</td>
+                            <td>{t('مبلغ قابل پرداخت', 'Total due')}</td>
                           </tr>
                       </tbody>
                     </table>
-                    <button
+                    <button 
                         type="submit"
                         onClick={(e) => handleSubmit(e)}
                         className={`btn  hover:border-2 hover:border-accent rounded-sm m-6 bg-accent hover:bg-base-100 hover:text-accent text-base-100 ${isSubmitDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        disabled={isSubmitDisabled}
-    >ورود به درگاه پرداخت</button>
+                        disabled={isSubmitDisabled || isdataCorr}
+    >{t('ثبت سفارش پرداخت نشده', 'Place unpaid order')}</button>
                   </div>
                     
                 </div>
+            </div>
+            <div 
+            className={
+            `alert transform ${status[0]} ease-in  transition-all
+             duration-300 bottom-0 my-10 left-0 right-0 fixed ${added}`}>
+
+              {!status[2]&& 
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                }
+              {status[2]&&
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                } 
+              <span>{status[1]}</span>
+              {status[2]&&
+                <span className="loading loading-spinner loading-sm"></span>
+                } 
             </div>
         </div>
     );

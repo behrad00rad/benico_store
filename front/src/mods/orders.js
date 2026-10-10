@@ -1,82 +1,25 @@
-import { useEffect, useState } from "react";
-import Cookies from "universal-cookie";
-import jalaliMoment from 'jalali-moment';
- 
-const Orders =() => { 
-    const convertToShamsi = (isoDate) => {
-        const date = new Date(isoDate);
-        const jalaliDate = jalaliMoment(date);
-    
-        // Convert jalaliDate to string in the desired format
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        const shamsiDateString = jalaliDate.locale('fa').format('YYYY-MM-DD');
-        const intlFormatted = new Intl.DateTimeFormat('fa-IR', options).format(date);
-    
-        return intlFormatted; // or shamsiDateString
-      };
-    
-    
-
-    const cookies = new Cookies() 
-    const token = cookies.getAll().token 
-    const [orders,setOrders] = useState([])
-    useEffect(() => {
-        const loadOrders = async (token) => {
-          try { 
-            const response = await fetch(`http://127.0.0.1:2000/auth/get_order/`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },  
-              body: JSON.stringify({ token: token }),
-            });
-            const data = await response.json();
-            console.log(data)
-            setOrders((oldData) => [...oldData, ...data.orders]);
-          } catch (error) {
-            console.error('Error fetching:', error);
-          }
-        };
-    
-        loadOrders(token);
-      }, []); 
- 
-    return(
-    <div className="overflow-y-scroll  h-full scroll-smooth"> 
-                {orders.map((order) => (
-                <div key={order.id}>                
-                    <div className="collapse collapse-arrow bg-secondary rounded-sm mb-4">
-                        <input type="checkbox" name="my-accordion-2" />  
-                        <div className="collapse-title text-xl font-medium"> 
-                            {`${convertToShamsi(order.date)} ${order.products}`}
-                        </div>  
-                        <div className="collapse-content"> 
-                        <table className="table flex p-2">
-                            <tbody>
-                                <tr key={order.order_id}>
-                                    <td>date</td>
-                                    <td>{convertToShamsi(order.date)}</td>
-                                </tr>
-                                <tr>
-
-                                    <td>products</td> 
-                                    <td>{order.products.join(', ')}</td> 
-                                </tr>
-                                <tr>
-                                    <td>price</td>
-                                    <td>{order.price}</td>
-                                </tr>
-                                <tr>
-                                    <td>Address</td>
-                                    <td>{order.address}</td>
-                                </tr>
-                                {/* Add more table cells based on the headers */}
-                            </tbody>
-                        </table>
-                        </div> 
-                    </div>                    
-                </div> 
-                ))} 
-    </div>)    
-} 
-export default Orders
+import {useLanguage} from '../language';
+import {useEffect, useState} from 'react';
+import Cookies from 'universal-cookie';
+export default function Orders() {
+  const {t, lang} = useLanguage();
+  const token = new Cookies().get('token');
+  const [orders, setOrders] = useState([]);
+  const [status, setStatus] = useState('loading');
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/auth/get_order/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token}), signal:controller.signal})
+      .then(response => {if (!response.ok) throw new Error(); return response.json();})
+      .then(data => {setOrders(data.orders); setStatus('ready');})
+      .catch(error => {if (error.name !== 'AbortError') setStatus('error');});
+    return () => controller.abort();
+  }, [token]);
+  const locale = lang === 'fa' ? 'fa-IR' : 'en-GB';
+  return <section className="orders-panel"><h1>{t('سفارش‌های شما', 'Your orders')}</h1>
+    {status === 'loading' ? <p role="status">{t('در حال بارگذاری…', 'Loading orders…')}</p> : status === 'error' ? <p role="alert">{t('سفارش‌ها بارگذاری نشد. دوباره وارد شوید.', 'Unable to load orders. Please sign in again.')}</p> : !orders.length ? <p>{t('هنوز سفارشی ثبت نشده است.', 'You have no orders yet.')}</p> : orders.map(order => <details key={order.order_id} className="order-row">
+      <summary><span>#{order.order_id}</span><span>{new Date(order.date).toLocaleDateString(locale)}</span><span className="order-status">{order.paid ? t('پرداخت شده', 'Paid') : t('پرداخت نشده', 'Unpaid')}</span></summary>
+      <ul>{order.products.map((product, i) => <li key={i}>{product}</li>)}</ul>
+      <p>{Number(order.price * 1000).toLocaleString(locale)} {t('تومان', 'toman')}</p><p>{order.address}</p>
+    </details>)}
+  </section>;
+}

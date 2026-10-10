@@ -1,9 +1,11 @@
+import {useLanguage} from '../language';
 import React, { useEffect, useState,useContext } from 'react';
 import Cookies from 'universal-cookie';
 import {ThemeContext} from './themeprovider'
 const cookies = new Cookies 
  
 const Cart = () => {
+  const {t, lang} = useLanguage();
   const cookies = new Cookies();
   const items = cookies.getAll()
   const theme = useContext(ThemeContext);
@@ -67,7 +69,7 @@ const loadCartItems = async () => {
       // Assuming that each product has a 'price' property, adjust this according to your actual data structure
       totalPrice += cartItem.price * cartItem.quantity;
     });
-    return (formatNumberWithCommas(totalPrice));
+    return totalPrice;
   };
 
   const fetchImage = async (id) => {
@@ -143,33 +145,33 @@ const loadCartItems = async () => {
         return cartItems.map((cartItem, index) => (
           <div className={`" flex items-center mb-3 rounded-sm overflow-hidden justify-center bg-secondary ${isFarsi?'font-yek':'font-mont'}`} key={index} data-theme={theme}>
                 <div className='flex w-full h-full'>    
-                    <div className='w-1/3 h-1/3 text-center'>
-                        <span>تعداد</span>
-                        <div className=' flex items-center'>
-                            <button
-                                className=" sm:w-1/2 p-2 rounded-sm hover:bg-base-100 ease-linear w-full"
-                                onClick={() => handleDecreaseQuantity(cartItem.productId, cartItem.size)}
-                            >
-                            <svg className={inverted} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 11H5V13H19V11Z" fill="rgba(255,255,255,1)"></path></svg>
-                            </button>
-                            <span className='text-center font-2xl w-full'>{cartItem.quantity}</span>
-                            <button
-                            className=" sm:w-1/2 p-2 rounded-sm hover:bg-base-100 ease-linear w-full"
-                            onClick={() => handleIncreaseQuantity(cartItem.productId, cartItem.size)}
-                            >
-                            <svg className={inverted} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z" fill="rgba(255,255,255,1)"></path></svg>
-                        </button>
-                        </div>
-                    </div>
-                    <div className='flex flex-col  p-2 w-1/3'>
-                        <h1 className='text-3xl text-accent'>{cartItem.title}</h1>
-                        <span className='w-full'>{isFarsi ? 'اندازه' : 'Size'} : {cartItem.size}</span>
-                        <span className='w-full'>{isFarsi ? cartItem.price + ',000 تومان' :cartItem.price + ',000 Tm' }</span>
-                    </div>
+                      <div className='w-1/3 h-1/3 text-center'>
+                          <span>{t('تعداد', 'Quantity')}</span>
+                          <div className=' flex items-center'>
+                              <button
+                                  className=" sm:w-1/2 p-2 rounded-sm hover:bg-base-100 ease-linear w-full"
+                                  onClick={() => handleDecreaseQuantity(cartItem.productId, cartItem.size)}
+                              >
+                              <svg className={inverted} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 11H5V13H19V11Z" fill="rgba(255,255,255,1)"></path></svg>
+                              </button>
+                              <span className='text-center font-2xl w-full'>{cartItem.quantity}</span>
+                              <button
+                              className=" sm:w-1/2 p-2 rounded-sm hover:bg-base-100 ease-linear w-full"
+                              onClick={() => handleIncreaseQuantity(cartItem.productId, cartItem.size)}
+                              >
+                              <svg className={inverted} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z" fill="rgba(255,255,255,1)"></path></svg>
+                          </button>
+                          </div>
+                      </div>
+                      <div className='flex flex-col  p-2 sm:w-1/3'>
+                          <h1 className='sm:text-3xl text-sm text-accent'>{cartItem.title}</h1>
+                          <span className='w-full text-xs sm:text-sm '>{isFarsi ? 'اندازه' : 'Size'} : {cartItem.size}</span>
+                          <span className='w-full text-xs sm:text-sm '>{isFarsi ? cartItem.price + ',000 تومان' :cartItem.price + ',000 Tm' }</span>
+                      </div>
                 </div>
-            <div className="sm:w-1/3 w-1/2">
-              <img className='bg-accent' src={imageUrls[cartItem.productId]} alt={`Product ${index}`} />
-            </div>
+                <div className="sm:w-1/3 w-1/2">
+                  <img className='bg-accent' src={imageUrls[cartItem.productId]} alt={`Product ${index}`} />
+                </div>
           </div>
         ));
       }
@@ -191,31 +193,31 @@ const loadCartItems = async () => {
               </span>}
 
         {cartItems.length !== 0  &&
-        <div className='flex'>
-            <div className="w-2/3 p-5">
+        <div className='sm:flex flex-col'>
+            <div className="sm:w-2/3 p-5">
                 {renderCartItems()}
             </div>
-            <div className="p-5 sm:w-2/5 h-fit">
-                      <div className=" w-full h-full p-5 text-center rounded-sm bg-secondary text-accent">
+            <div className="p-5 sm:w-2/5 w-full h-fit ">
+                      <div className=" w-full h-full p-5 text-center items-center justify-center rounded-sm bg-secondary text-accent">
                         <h1 className="text-xl">{isFarsi?'سبد خرید':'Checkout detail'}</h1>
-                        <table className="table items-center  justify-between text-right text-sm gap-4">
-                            <thead className="text-accent">
+                        <table className="table items-center  justify-center text-right text-xs">
+                            <thead className="text-accent ">
                               <tr>
-                                <td>قیمت</td>
-                                <td>تعداد</td>
+                                <td>{t('قیمت', 'Price')}</td>
+                                <td>{t('تعداد', 'Quantity')}</td>
                                 <td>{isFarsi?'محصول':'product'}</td>
                               </tr>
                               {cookies.getAll().cartData?cookies.getAll().cartData.map(
                                 (product)=>(
                                   <tr>
-                                    <td>{product.price},000تومان</td>
+                                    <td>{Number((product.price) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}</td>
                                     <td>{product.quantity}x</td>
                                     <td className="flex flex-col">
                                       <span>
                                         {product.productId}# {product.title}
                                       </span>
                                       <span className="text-xs text-neutral">
-                                        سایز:{product.size}
+                                        {t('سایز', 'Size')}: {product.size}
 
                                       </span>
                                       </td>
@@ -226,7 +228,7 @@ const loadCartItems = async () => {
                         </thead>
                         <tbody>
                               <tr>
-                                <td>{calculateTotalPrice()},000تومان</td>
+                                <td>{Number((calculateTotalPrice()) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}</td>
                                 <td></td>
                                 <td>{isFarsi?'مبلغ کل':'final price'}</td>
                               </tr>
@@ -235,7 +237,7 @@ const loadCartItems = async () => {
                         <a
                         href='/checkout'
                         className="btn  hover:border-2 hover:border-accent rounded-sm m-6 bg-accent hover:bg-base-100 hover:text-accent text-base-100" 
-                        >ادامه ثبت سفارش </a>
+                        >{t('ادامه ثبت سفارش', 'Continue to checkout')} </a>
                       </div>
                         
             </div>

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,7 +62,7 @@ ROOT_URLCONF = 'benico.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'../front/build/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -117,15 +118,29 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
+# CORS_ALLOWED_ORIGINS = [
+#     'http://127.0.0.1/',  # Add your frontend's origin here
+# ]
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = 'static/' 
+MEDIA_ROOT = BASE_DIR
+STATICFILES_DIRS =[os.path.join(BASE_DIR,'../front/build/static/')]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'your-smtp-server.com'  # Replace with your SMTP server address
+EMAIL_PORT = 587  # Replace with the appropriate port
+EMAIL_USE_TLS = True  # Use TLS for secure connection
+EMAIL_HOST_USER = 'your-email@example.com'  # Replace with your SMTP username
+EMAIL_HOST_PASSWORD = 'your-smtp-password'  # Replace with your SMTP password

@@ -165,8 +165,8 @@ const loadCartItems = async () => {
                 <span className='text-accent'>{isFarsi ? cartItem.price + ',000 تومان' :cartItem.price + ',000 Tm' }</span>
               </div>
             </div>
-            <a  href={'/item/'+cartItem.productId} className="sm:w-1/3 w-1/2">
-              <img className='bg-accent' src={imageUrls[cartItem.productId]} alt={`Product ${index}`} />
+            <a  href={'/item/'+cartItem.productId} className="md:w-1/3 w-1/2">
+              <img className='bg-white' src={imageUrls[cartItem.productId]} alt={`Product ${index}`} />
             </a>
           </div>
         ));
@@ -195,12 +195,12 @@ const loadCartItems = async () => {
         </div>
         <div className='divide-x divider '></div>
         <div className='flex flex-col gap-2 items-center justify-center pb-11'>
-              <a href='/cart' className='sm:w-1/2 bg-secondary p-2 rounded-full text-center text-accent'>
+              <a href='/cart' className=' w-2/3  bg-secondary p-2 rounded-full text-center text-accent'>
               <span>
               {isFarsi?' رفتن به سبد خرید':'view cart'}
               </span>
               </a>
-              <a href='/checkout' className='sm:w-1/2 font-bold bg-accent p-2 rounded-full text-center text-secondary'>
+              <a href='/checkout' className=' w-2/3  font-bold bg-accent p-2 rounded-full text-center text-secondary'>
               <span>
               {isFarsi?'تسویه حساب':'PROCEED TO CHECKOUT'}
               </span>

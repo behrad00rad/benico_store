@@ -1,11 +1,13 @@
+import {useLanguage} from '../language';
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import Cookies from "universal-cookie";
 
 import { ThemeContext } from './themeprovider';
 const IAddressForm = () => {
+  const {t} = useLanguage();
     const theme = useContext(ThemeContext);
-    const isFarsi = true
+    const isFarsi = new Cookies().get('Lang') !== 'en'
     const cookies = new Cookies()
     const [selectedState, setSelectedState] = useState('');
     const [loading,setLoading] = useState('opacity-0')
@@ -39,7 +41,7 @@ const IAddressForm = () => {
             });
             setSelectedCity(data[0].city)
             setSelectedState(data[0].state)
-            console.log(data[0])
+             (data[0])
           } catch (error) {
             console.error('Error fetching:', error);
           }
@@ -62,14 +64,53 @@ const IAddressForm = () => {
     });
     
 
-    const handleInputChange = (event) => {
+    const [timerStarted, setTimerStarted] = useState(false); 
+    const [added, setAdded] = useState('translate-y-full opacity-0');
+    const [status,setStatus] = useState([' alert-error ','login failed',false]);
     
-        const { name, value } = event.target;
-        setFormData({
-            ...formData,
-            [name]: value,
-        });
-    };
+    const handleInputChange = (event) => {
+      const { name, value } = event.target;
+      
+      if (name === "PostalCode" && !/^\d{10}$/.test(value)) {
+          // Postal code is not a 10-digit number, you can handle this error as needed
+          // For example, display an error message to the user
+          // You can also prevent further processing of the form
+          
+          // or disable the submit button until the input is correct
+          setStatus(['alert-error','کد پستی را به درستی وارد کنید' , false]);
+          setAdded('translate-y-0 opacity-1');
+          setTimerStarted(true);
+
+        }
+
+        if (name === "phoneNumber" && !/^\d{11}$/.test(value)) {
+          // Phone number doesn't match the expected format (e.g., 10 digits)
+          // You can handle this error similarly to the Postal Code validation
+          setStatus(['alert-error','شماره تلفن باید 11 رقم باشد' , false]);
+          setAdded('translate-y-0 opacity-1');
+          setTimerStarted(true);
+
+    }
+      setFormData({
+          ...formData,
+          [name]: value,
+      });
+  };
+
+    useEffect(() => {
+      let timer;
+      if (timerStarted) {
+        timer = setTimeout(() => {
+          setAdded(' translate-y-full opacity-0');
+          setTimerStarted(false);
+        }, 2000);
+      }
+  
+      return () => {
+        clearTimeout(timer);
+      };
+    }, [timerStarted]);
+
 
     const handleSubmit = async (event) => {
         event.preventDefault(); // Prevent the default form submission behavior
@@ -127,18 +168,18 @@ const IAddressForm = () => {
 
     return (
         <div className={` flex flex-col justify-center items-center p-5 w-full ${isFarsi?'font-yek':' font-mont font-thin '} `} data-theme={theme} >
-           <h1 className='text-3xl p-5'>ویرایش ادرس</h1>
+           <h1 className='text-3xl p-5'>{t('ویرایش ادرس', 'Edit address')}</h1>
             <div className=" sm:w-1/2 bg-secondary p-10 rounded shadow-md ">
 
                 <form  onSubmit={handleSubmit} >
                     <div className='grid sm:grid-cols-2 grid-cols-1 gap-2'>
-                            <div className="mb-4">
+                    <div className="mb-4">
                                 <label htmlFor="lname" className="block text-sm  text-accent">{isFarsi?"نام خانوادگی":'Last Name'}</label>
                                 <input
                                     type="text"
                                     autoComplete='Last Name'
                                     id="lname"
-                                    name="Last name"
+                                    name="lname" 
                                     value={formData.lname}
                                     onChange={handleInputChange}
                                     className="mt-1 p-2 w-full  rounded-sm bg-base-100 "
@@ -244,6 +285,22 @@ const IAddressForm = () => {
                                 </button>
                            </div>
                 </form>
+            </div>
+            <div 
+            className={
+            `alert transform ${status[0]} ease-in  transition-all
+             duration-300 bottom-0 my-10 left-0 right-0 fixed ${added}`}>
+
+              {!status[2]&& 
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                }
+              {status[2]&&
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                } 
+              <span>{status[1]}</span>
+              {status[2]&&
+                <span className="loading loading-spinner loading-sm"></span>
+                } 
             </div>
         </div>
 

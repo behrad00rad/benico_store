@@ -3,16 +3,22 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from django.contrib.auth import authenticate
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import addresses, userinfo
-import re
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from django.views.decorators.csrf import csrf_exempt
+from .models import addresses, userinfo,OrderP
 from .models import userinfo, addresses,order
 from product.models import item
+from django.core.mail import send_mail
+from django.core.exceptions import ObjectDoesNotExist
+import re,string,json,logging,requests
+
+logger = logging.getLogger(__name__)
+@api_view(['POST'])
+def PasswordReset(request):
+        # The old handler replaced passwords before attempting delivery through
+        # placeholder SMTP settings. Keep passwords intact until reset email is configured.
+        return Response({'message': 'Password reset email is not configured. Contact the store administrator.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
 
 def is_valid_email(email):
     # Regular expression to validate email addresses
@@ -26,7 +32,7 @@ def is_valid_email(email):
 def login(request):
     email = request.data.get('email')
     password = request.data.get('password')
-    if (len(email)<1 or len(password)<1) : return Response({'error': 'Bad request'},status=status.HTTP_400_BAD_REQUEST)
+    if not email or not password: return Response({'error': 'Enter your username and password'},status=status.HTTP_400_BAD_REQUEST)
     if is_valid_email(email):
         try:
             username = User.objects.get(email=email)
@@ -39,7 +45,8 @@ def login(request):
 
     if user:
         token, _ = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=status.HTTP_200_OK)
+        userinfo.objects.get_or_create(user=user, defaults={'token': token.key})
+        return Response({'token': token.key, 'user': {'username': user.username, 'is_staff': user.is_staff}, 'redirect': '/admin/' if user.is_staff else '/dashboard/detail/'}, status=status.HTTP_200_OK)
     else:
         return Response({'error': 'incorrect password'}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -65,7 +72,6 @@ def register(request):
         return Response({'error': 'User creation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
-@csrf_exempt
 @api_view(['POST'])
 def get_user_info(request):
     token = request.data.get('token')
@@ -74,6 +80,7 @@ def get_user_info(request):
     for i in info:
         res.append({
             'username':i.user.username,
+            'is_staff':i.user.is_staff,
             })
     print(res)
     return  Response(res,status.HTTP_200_OK)
@@ -218,100 +225,174 @@ def add_address(request):
     except addresses.DoesNotExist:
         return Response({'message': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
     
+
+
+
 @api_view(['POST'])
 def edit_address(request):
-    print(request.data)
-    token = request.data.get('token')
-    address_id = request.data.get('id')  # Use 'address_id' instead of 'id'
-    address_data = {
-        'address': request.data['address'],
-        'state': request.data['state'],
-        'PostalCode': request.data['PostalCode'],
-        'city': request.data['city'],
-        'fname': request.data['fname'],
-        'lname': request.data['lname'],
-        'phoneNumber': request.data['phoneNumber'],  # Use 'phoneNumber' instead of 'phoneNum'
-    }
+    try:
+        print(request.data)
+        # Get token and address_id from the request data
+        token = request.data.get('token')
+        address_id = request.data.get('id')  # Change to 'address_id'
 
-    user_info = userinfo.objects.get(token=token)
-    user = user_info.user
-    address = addresses.objects.get(id=address_id, user=user)  # Make sure to filter by user
+        # Fetch the user's information based on the token
+        user_info = userinfo.objects.get(token=token)
+        user = user_info.user
+
+        # Check if the address with the given address_id exists and belongs to the user
+        address = addresses.objects.get(id=address_id, user=user)
+        print(address)
+
+        # Update address details with the provided data
+        address.address = request.data['address']
+        address.state = request.data['state']
+        address.PostalCode = request.data['PostalCode']
+        address.city = request.data['city']
+        address.Fname = request.data['fname']
+        address.Lname = request.data['lname']
+        address.Phone_number = request.data['phoneNumber']
+        print(address.Fname)
+        # Save the updated address
+        address.save()
         
-        # Update only the address details
-    for key, value in address_data.items():
-            setattr(address, key, value)
-    address.save()  # Save the updated address
-        
+        return Response({'message': 'Address updated successfully'}, status=status.HTTP_200_OK)
 
-    return Response({'message': 'Address updated successfully'}, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        logger.error(f"Object does not exist: {e}")
+        return Response({'error': 'Object does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return Response({'error': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.response import Response
+import random
+
+from django.db import transaction
+from django.db.models import F
 
 @api_view(['POST'])
 def submit_order(request):
-        print(request.data)
-        token = request.data.get('token','')
-        if token:
-            user_info = userinfo.objects.get(token=token)
-            user = user_info.user 
-        else:
-            user=None
-        
-        address = request.data.get('address')
-        state = request.data.get('state')
-        PostalCode = request.data.get('PostalCode')
-        city = request.data.get('city')
-        fname = request.data.get('fname')
-        lname = request.data.get('lname')
-        phoneNumber= request.data.get('phoneNumber')
-        product_ids = request.data['product_ids']  # Assuming you're using checkboxes for product selection
-        products = item.objects.filter(id__in=product_ids.productId)
-        price = sum([product.price for product in products])
-
-        new_order = order(
-            order_id=random.randint(1000000,9999999),
-            user=user, 
-            address=address,
-            price=price,
-            Fname=fname,
-            Lname=lname,
-            Phone_number=phoneNumber,
-            PostalCode=PostalCode, 
-            state=state,
-            city=city,
-            paid=False
-            )
-        new_order.save()
-        new_order.products.set(products)
-
-
-        return Response({'success': True},status=status.HTTP_201_CREATED)
+    token = request.data.get('token', '')
+    user = None
+    if token:
+        try:
+            user = userinfo.objects.get(token=token).user
+        except userinfo.DoesNotExist:
+            return Response({'error': 'Please sign in again'}, status=401)
+    required = ('address', 'state', 'city', 'fname', 'lname', 'PostalCode', 'phoneNumber')
+    if any(not request.data.get(field) for field in required):
+        return Response({'error': 'Complete the delivery information'}, status=400)
+    if not re.fullmatch(r'\d{10}', str(request.data['PostalCode'])) or not re.fullmatch(r'\d{11}', str(request.data['phoneNumber'])):
+        return Response({'error': 'Enter a valid postal code and phone number'}, status=400)
+    lines = request.data.get('products')
+    if not isinstance(lines, list) or not lines:
+        return Response({'error': 'Your bag is empty'}, status=400)
+    quantities = {}
+    try:
+        for line in lines:
+            data = line[0]
+            product_id = int(data['productId'])
+            quantity = data['productQ']
+            size = data['productS']
+            if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity < 1 or size not in ('L', 'XL', 'XXL'):
+                raise ValueError()
+            key = (product_id, size)
+            quantities[key] = quantities.get(key, 0) + quantity
+    except (KeyError, IndexError, TypeError, ValueError):
+        return Response({'error': 'Invalid product, size or quantity'}, status=400)
+    try:
+        with transaction.atomic():
+            products = {p.id: p for p in item.objects.filter(id__in=[key[0] for key in quantities])}
+            total = 0
+            for (product_id, size), quantity in quantities.items():
+                product = products.get(product_id)
+                if product is None:
+                    raise ValueError('Product no longer exists')
+                field = size + '_count'
+                updated = item.objects.filter(pk=product_id, **{field + '__gte': quantity}).update(**{field: F(field) - quantity})
+                if not updated:
+                    raise ValueError('Not enough stock for the selected size')
+                total += (product.price or 0) * quantity
+            identifier = random.randint(10000000, 99999999)
+            while order.objects.filter(pk=identifier).exists():
+                identifier = random.randint(10000000, 99999999)
+            new_order = order.objects.create(order_id=identifier, user=user, price=total, paid=False,
+                address=request.data['address'], state=request.data['state'], city=request.data['city'],
+                Fname=request.data['fname'], Lname=request.data['lname'],
+                PostalCode=request.data['PostalCode'], Phone_number=request.data['phoneNumber'])
+            for (product_id, size), quantity in quantities.items():
+                line = OrderP.objects.create(order_id=identifier, product=products[product_id], Q=quantity, size=size)
+                new_order.products.add(line)
+    except ValueError as error:
+        return Response({'error': str(error)}, status=409)
+    return Response({'success': True, 'order_id': identifier, 'paid': False}, status=201)
 
 @api_view(['POST'])
 def get_orders(request):
-    token = request.data['token']
-    user_info = userinfo.objects.get(token=token)
-    user = user_info.user
+    token = request.data.get('token')
+    try:
+        user_info = userinfo.objects.get(token=token)
+    except userinfo.DoesNotExist:
+        return Response({'error': 'Please sign in to view orders'}, status=status.HTTP_401_UNAUTHORIZED)
+    user = user_info.user 
     orders = order.objects.filter(user=user)
     orders_data = []
     
     for o in orders:
-        products_titles = [product.title for product in o.products.all()]
+        products = [f"{product.product.title} x {product.Q} ({product.size})" for product in o.products.all()]
+
         orders_data.append({
-            'products': products_titles,
+            'products': products,
             'order_id': o.order_id,
             'price': o.price,
+            'paid': o.paid,
             'date': o.date,
-            'id': o.id,
             'address': o.address,
             'fname': o.Fname,
             'lname': o.Lname,
-            'state': o.state,
+            'state': o.state, 
             'city': o.city,
             'phone_number': o.Phone_number,
             'postal_code': o.PostalCode
         })
 
-    return Response({'orders': orders_data})
+    return Response({'orders': orders_data[::-1]})
+ 
 
+@api_view(["GET"])
+def verify(request):
+    # Define the JSON data you want to send in the request
+    if request.query_params.get('Status','') == "OK":
+        return Response(request.query_params.get('Authority',''))
+    else:
+        data = {
+        "merchant_id": "YOUR_MERCHANT_ID", 
+        "authority": request.query_params.get('Authority',''),
+    }
 
+    # Set the headers to specify that you are sending JSON data
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json", 
+    }
+
+    # Make the JSON POST request to the ZarinPal API
+    # response = requests.post(
+    #     url="https://api.zarinpal.com/pg/v4/payment/verify.json",
+    #     data=json.dumps(data),
+    #     headers=headers,
+    # )
+
+    # Check if the request was successful (status code 200)
+    # if response.status_code == 200:
+    #     response_data = response.json()
+    #     # Process the response data as needed
+    #     # For example, you can return it as a JSON response to your client
+    #     return Response("درحال بازگرداندن شما به سایت پذیرنده")
+    # else:
+    #     # Handle the case where the request was not successful
+    #     return Response({"error": "Failed to verify payment"}, status=response.status_code)

@@ -16,7 +16,7 @@ const Dashboard = () => {
     if (Page === "address") {
       setPG(<Address />);
     }
-    else if (Page === "detail") {      
+    else if (Page === "detail" || !Page) {      
       setPG(<Adetail />);
     }
     else if (Page === "orders") {
@@ -27,8 +27,8 @@ const Dashboard = () => {
 
   return (
     <>
-    <div className='min-w-screen flex flex-col sm:flex-row min-h-screen h-fit sm:p-6 py-4 gap-4' data-theme={theme}>
-      <div className='bg-base-100 sm:w-4/5 h-fit'>
+    <div className='min-w-screen flex flex-col lg:flex-row min-h-screen h-fit sm:p-6 py-4 gap-4' data-theme={theme}>
+      <div className='bg-base-100 lg:w-4/5 h-fit'>
         {PageShow ? PageShow : "not found" }
       </div>
       <DashNav/>

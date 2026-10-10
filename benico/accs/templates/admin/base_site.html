@@ -1,0 +1,8 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ title }} | Benico management{% endblock %}
+{% block branding %}<h1 id="site-name"><a href="{% url 'admin:index' %}">BENICO <small> / management</small></a></h1>{% endblock %}
+{% block extrastyle %}{{ block.super }}<style>
+:root, html[data-theme="light"] { --primary: #681b2c; --secondary: #421522; --accent: #f2dfbd; --header-bg: #681b2c; --header-color: #f8f4ed; --link-fg: #681b2c; --breadcrumbs-bg: #efe6da; --breadcrumbs-fg: #681b2c; --breadcrumbs-link-fg: #421522; --selected-row: #f8f4ed; }
+#header { padding: 18px 30px; } #site-name { letter-spacing: .12em; font-family: Georgia,serif; } #site-name small { font: 12px Arial,sans-serif; letter-spacing: .02em; }
+.module { border-radius: 8px; overflow: hidden; } .button, input[type=submit] { border-radius: 20px; }
+</style>{% endblock %}

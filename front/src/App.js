@@ -4,13 +4,11 @@ import {
   Routes,
   BrowserRouter as Router,
   Route,
-  Navigate,
-  redirect
+  Navigate
 } from "react-router-dom";
 import Main from "./mods/main";
 import Nav from "./mods/nav";
 import Cookies from "universal-cookie";
-import { useState,useEffect } from "react";
 import { ThemeProvider } from "./mods/themeprovider";
 import Accounts from "./mods/accounts";
 import Dashboard from "./mods/dashbord";
@@ -18,17 +16,22 @@ import Checkout from "./mods/Checkout";
 import AddAddress from "./mods/AddAddress";
 import Cart from "./mods/Cart";
 import IAddressForm from "./mods/forom";
-import Admin from "./mods/Admin";
+import PasswordReset from "./mods/PasswordReset";
+import Search from "./mods/search"; 
+import Recipte from "./mods/recipte";
+import AboutUs from "./mods/verify";
+import {LanguageProvider, useLanguage} from './language';
+import AdminPanel from './mods/AdminPanel';
 
-function App() {
+
+function AppContent() {
+  const {lang} = useLanguage();
   const cookies = new Cookies();
-  cookies.set('Lang', 'fa',{ path: '/' });
   const token = cookies.getAll().token ;
   const userinfo = cookies.getAll().userinfo ;
 
-  const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = 'benilight';
   const cartData = cookies.getAll().cartData;
-  const [theme, setTheme] = useState(prefersDarkMode() ? 'benidark' : 'benilight');
   if (!cartData || cartData.length === 0) {
     cookies.set('cartData', [], { path: '/' });
   }
@@ -43,7 +46,7 @@ function App() {
       });
       const data = await response.json();
       cookies.set('userinfo',data,{ path : '/' })
-      console.log(data)
+
     } catch (error) {
       console.error('Error fetching :', error);
     }
@@ -53,76 +56,72 @@ function App() {
       loaduser(token)
     }  
 
-  const handleLangSelect = (lang) => {
-    cookies.set('Lang', lang,{ path: '/' });
-    window.location.reload(); // Reload the page to apply the selected language
-  };
-  useEffect(() => {
-    // Add an event listener to detect changes in the user's preferenc
-
-    const handleThemeChange = (e) => {
-      setTheme(e.matches ? 'benidark' : 'benilight');
-    };
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    darkModeMediaQuery.addListener(handleThemeChange);
-    return () => darkModeMediaQuery.removeListener(handleThemeChange);
-  }, []);
   return (
     <ThemeProvider theme={theme}>
-    <div  >
+    <div className="site-root" data-theme={theme} lang={lang} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <Router>
         <Routes>
-          <Route path="/checkout/" element={
-            <div className=" 2xl:px-96 2xl:py-52 ">
+        <Route path="/admin/" element={<AdminPanel/>}/>
+        <Route path="/checkout/" element={
+            <div className=" app-shell ">
               <Nav /> 
             <Checkout/>
             </div>
           }/>
-          <Route path="/cart/" element={
-            <div className=" 2xl:px-96 2xl:py-52 ">
+        <Route path="/cart/" element={
+            <div className=" app-shell ">
               <Nav /> 
             <Cart/>
             </div>
           }/>
         <Route path="/dashboard/address/add/" element={
-        <div className=" 2xl:px-96 2xl:py-52 ">
+        <div className=" app-shell ">
           <Nav /> 
           <AddAddress/>
         </div>
         }/>
         <Route path="/dashboard/address/edit/:id" element={
-        <div className=" 2xl:px-96 2xl:py-52 ">
+        <div className=" app-shell ">
           <Nav /> 
           <IAddressForm/>
         </div>
         }/>
-          <Route path="/products/:category?/:Index?" element={
-                <div className=" 2xl:px-96 2xl:py-52 ">
+        <Route path="/products/:category?/:Index?" element={
+                <div className=" app-shell ">
               <Nav /> 
               <Product/>
                 </div>
                 } 
              />
-          <Route path="/item/:id" element={
-              <div className=" 2xl:px-96 2xl:py-52 ">
+        <Route path="/item/:id" element={
+              <div className=" app-shell ">
               <Nav />
               <ItemPage />
               </div>} 
                />
-          <Route path="/" element={
+        <Route path="/" element={
           <Main/>
           }/>
-
-          <Route path="/accounts" element={
-          <div className=" 2xl:px-96 2xl:py-52 ">
+        <Route path="/reset-password" element={
+          <div className=" app-shell ">
+          <Nav/>
+          <PasswordReset/>
+        </div>
+        } />
+        <Route path="/accounts" element={
+          <div className=" app-shell ">
             <Nav/>
-            {!userinfo ?<Accounts/> : <Navigate to="/dashboard" replace />}
+            {!userinfo ?<Accounts/> : <Navigate to={userinfo?.[0]?.is_staff ? '/admin/' : '/dashboard/detail/'} replace />}
             </div>}/>
-          <Route path="/dashboard/:Page?" element={
-          <div className=" 2xl:px-96 2xl:py-52 ">
+        <Route path="/dashboard/:Page?" element={
+          <div className=" app-shell ">
             <Nav/>
             {userinfo ?<Dashboard/> : <Navigate to="/accounts" replace />}
             </div>}/>
+        <Route path="/search" element={<><Nav/><Search/></>} />  
+        <Route path="/recipte/:id" element={<><Nav/><Recipte/></>} />  
+        <Route path="/contact-us/" element={<><Nav/><AboutUs/></>} />  
+
 
         </Routes>
       </Router>
@@ -131,4 +130,10 @@ function App() {
   );
 }
 
-export default App;
+function LocalizedApp() {
+  const {lang} = useLanguage();
+  return <AppContent key={lang}/>;
+}
+export default function App() {
+  return <LanguageProvider><LocalizedApp/></LanguageProvider>;
+}

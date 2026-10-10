@@ -7,6 +7,8 @@ module.exports = {
         benidark: {
 
             "primary": "#0a0a0a",
+            "base-content": "#f5f5f5",
+            "secondary-content": "#f5f5f5",
                     
             "secondary": "#1e1e1e",
                     
@@ -27,6 +29,8 @@ module.exports = {
         benilight: {
           
           "primary": "#fdfdfd",
+          "base-content": "#171717",
+          "secondary-content": "#171717",
           
           "secondary": "#ededed",
                    

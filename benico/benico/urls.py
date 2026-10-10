@@ -15,12 +15,27 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include
+from django.urls import path,include,re_path
 from django.views.generic import TemplateView
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    re_path(r'^(?:dashboard(?:/.*)?|search|recipte/[^/]+)/?$', TemplateView.as_view(template_name='index.html')), 
     path('',TemplateView.as_view(template_name='index.html')),
-    path('product/', include('product.urls')),
+    path('cart/',TemplateView.as_view(template_name='index.html')),
+    path('admin/', TemplateView.as_view(template_name='index.html')),
+    path('django-admin/', admin.site.urls),
+    path('auth/', include('accs.urls')),
     path('image/', include('image.urls')),
-    path('auth/', include('accs.urls'))
+    path('product/', include('product.urls')),
+    path('products/',TemplateView.as_view(template_name='index.html')),
+    path('accounts/',TemplateView.as_view(template_name='index.html')),
+    path('checkout/',TemplateView.as_view(template_name='index.html')),
+    path('contact-us/',TemplateView.as_view(template_name='index.html')),
+    path('reset-password/',TemplateView.as_view(template_name='index.html')),
+    path('item/<slug:id>/',TemplateView.as_view(template_name='index.html')),
+    path('products/<slug:page>/',TemplateView.as_view(template_name='index.html')),
+    path('dashboard/<slug:page>/',TemplateView.as_view(template_name='index.html')),
+    path('products/<slug:page>/<slug:e>/',TemplateView.as_view(template_name='index.html')), 
+    path('dashboard/<slug:page>/<slug:w>/',TemplateView.as_view(template_name='index.html')),
+    path('products/<slug:page>/<slug:e>/<slug:dard>/<slug:fd>',TemplateView.as_view(template_name='index.html')),
 ]

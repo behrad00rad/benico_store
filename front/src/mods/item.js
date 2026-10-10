@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import ImageSlider from './imageslider';
+import {useLanguage} from '../language';
 import { useParams } from 'react-router-dom';
 import Cookies from 'universal-cookie';
 import Footer from './Footer';
 import { ThemeContext } from './themeprovider';
 
 const ItemPage = () => {
+  const {t, lang} = useLanguage();
   const theme = useContext(ThemeContext);
   const [left, setLeft] = useState(0);
   const [mess, setMess] = useState();
@@ -40,7 +42,6 @@ const ItemPage = () => {
   }, [id]);
 
   const handlesizeselect = (S) => {
-    console.log('called', product[S + '_count']);
       setLeft(product[S + '_count']);
       setSelectedSize(S); // Set the selected size
   };
@@ -64,7 +65,6 @@ const ItemPage = () => {
       (item) => item.productId === productId && item.size === selectedSize
     );
     if (existingItem) {
-      console.log(existingItem.left)
       if (existingItem.left > existingItem.quantity) {
         existingItem.quantity += 1;
       } else {
@@ -92,9 +92,9 @@ const ItemPage = () => {
   };
 
   return (
-    <div className={`bg-base-100 min-w-screen h-full sm:p-10 flex flex-col items-center justify-center gap-10 ${isFarsi?'font-yek':'font-mont font-thin'} `} data-theme={theme}>
-      <div className=' text-neutral h-fit bg-secondary flex flex-col md:flex-row sm:rounded overflow-hidden'>
-        <div className='md:w-2/5'>
+    <div className={`bg-base-100 min-w-screen h-full z-30 sm:p-10 flex flex-col items-center justify-center gap-10 font-yek`} data-theme={theme}>
+      <div className=' text-neutral h-fit bg-secondary flex flex-col md:flex-row sm:rounded overflow-hidden product-layout'>
+        <div className='md:w-2/5 product-media'>
           <ImageSlider uuids={images} />
         </div>
         <div className='divide-x divider hidden sm:block'></div>
@@ -104,33 +104,27 @@ const ItemPage = () => {
             <h1 className='text-3xl text-accent'>
               {isFarsi ? `${product.title} #${product.id}` : `${product.title} #${product.id}`}
             </h1>
-            <p className='w-11/12 text-sm hidden sm:block'>
-              {isFarsi ? "متن توضیحات به زبان فارسی" : "Soft, durable, and beautifully designed..."}
-            </p>
-            <p className='w-11/12 text-xs sm:hidden break-before-avoid'>
-              {isFarsi ? "متن توضیحات کوتاه به زبان فارسی" : "Soft, durable, and beautifully designed..."}
-            </p>
           </div>
 
-          <div className='  font-light sm:w-full flex flex-col sm:flex-row sm:items-center sm:justify-start gap-2'>
+          <div className={`'  font-light sm:w-full flex flex-col sm:flex-row sm:items-center sm:justify-start gap-2`}>
           
                             <div className=' flex flex-row items-center sm:gap-3 sm:w-1/2 gap-2'>
                                     <select
                                       className="p-2 bg-base-100 sm:rounded text-accent w-1/2"
+                                      value={selectedSize || ""}
+                                      aria-label={t('انتخاب اندازه', 'Choose size')}
                                       onChange={(event) => {handlesizeselect(event.target.value)}}
                                     >
-                                      <option disabled selected>{isFarsi ? "انتخاب اندازه" : "Size"}</option>
+                                      <option disabled value="">{isFarsi ? "انتخاب اندازه" : "Size"}</option>
                                       <option value="L">L</option>
                                       <option value="XL">XL</option>
                                       <option value="XXL">2XL</option>
                                     </select>
                                     <span className='text-accent w-1/2  '>
-                                       {selectedSize?`${product[selectedSize+'_count']>0?`${left}  موجود `:''}`
-                                       :'انتخاب کنید'
-                                       }
+                                       {selectedSize ? (left > 0 ? `${left} ${t('موجود', 'available')}` : t('ناموجود', 'Sold out')) : t('انتخاب کنید', 'Choose a size')}
                                     </span>
                             </div>
-                          <button className="sm:w-1/4 rounded underline text-accent" onClick={()=>window.my_modal_4.showModal()}>{isFarsi?'راهنمای اندازه':'Size Chart'}</button>
+                          <button className="sm:w-1/4 rounded underline text-accent" onClick={()=>document.getElementById('my_modal_4').showModal()}>{isFarsi?'راهنمای اندازه':'Size Chart'}</button>
                           <dialog id="my_modal_4" className="modal">
                                 <form method="dialog" className="bg-base-100 modal-box max-w-5xl rounded-lg font-bold">
                                   <div className="overflow-x-auto ">
@@ -178,14 +172,15 @@ const ItemPage = () => {
           </div>
           <div className='flex flex-col gap-y-3 sm:w-full  '>
             <span className='text-accent sm:text-3xl  sm:items-center'>
-              {`${product.price},000${isFarsi?' تومان':'Tm'}`}
+              {Number((product.price || 0) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}
             </span>
             <div>
               <button
-                className={`${product[selectedSize+'_count'] > 0 ? 'text-secondary':'disabled bg-base-100 text-red-600 ' } transition-color p-5 bg-accent rounded-sm sm:text-center sm:w-3/5 font-semibold  w-full `}
+                disabled={!(product[selectedSize + "_count"] > 0)}
+                className={`${product[selectedSize+'_count'] > 0 || selectedSize === undefined &&  !product.out ?  'text-secondary':'disabled bg-base-100 text-red-600 ' } transition-color p-5 bg-accent rounded-sm sm:text-center sm:w-3/5 font-semibold  w-full `}
                 onClick={() => product[selectedSize+'_count'] > 0 && addToCart(id, selectedSize)}
               >
-                {isFarsi ? product[selectedSize+'_count'] > 0?"افزودن به سبد خرید":"ناموجود" : "Add to Cart"}
+                {selectedSize === undefined && !product.out ? t('یک سایز را انتخاب کنید', 'Choose a size') : product[selectedSize+'_count'] > 0 && !product.out ? t('افزودن به سبد خرید', 'Add to bag') : t('ناموجود', 'Sold out')}
               </button>
             </div>
           </div>

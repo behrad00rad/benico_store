@@ -1,9 +1,11 @@
+import {useLanguage} from '../language';
 import { useContext, useEffect, useRef, useState } from "react";
 import Cookies from "universal-cookie";
 import { ThemeContext } from "./themeprovider";
 
 
 const Accounts = () => {
+  const {t} = useLanguage();
     
     const [timerStarted, setTimerStarted] = useState(false); 
     const [added, setAdded] = useState('translate-y-full opacity-0');
@@ -52,7 +54,7 @@ const Accounts = () => {
     }
     const handleLogin = async() =>{
         try {
-            const response = await fetch(`http://127.0.0.1:2000/auth/login/`,{
+            const response = await fetch(`http://127.0.0.1:2000/auth/loginn/`,{
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -70,9 +72,10 @@ const Accounts = () => {
                 setAdded('translate-y-0 opacity-1')
                 setTimerStarted(true)
                 cookies.set('token', data.token, { path: '/' })
+                cookies.set('userinfo', [data.user], {path:'/'});
                 setTimeout(() => {
                     // Redirect to another page using the history object
-                    window.location.href = '/products/';
+                    window.location.href = data.redirect || '/dashboard/detail/';
                   }, 2000); // Delay in milliseconds (2 seconds)
                 
             }
@@ -84,76 +87,80 @@ const Accounts = () => {
             setTimerStarted(true)
           }
     }
-    const handleRegister = async() =>{
-        if (spassword===sspassword){
-
+    const handleRegister = async() => {
+        if (spassword === sspassword) {
+            // Check if the password is at least 8 characters long
+            if (spassword.length < 8) {
+                setStatus(['alert-error', 'رمز عبور باید حداقل 8 کاراکتر باشد', false]);
+                setAdded('translate-y-0 opacity-1');
+                setTimerStarted(true);
+                return;
+            }
+    
             try {
-                
-            const response = await fetch(`http://127.0.0.1:2000/auth/register/`,{
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userRegisterData),
-            });
-            if (response.status === 409){     
-                setStatus(['alert-error',isFarsi?'نام کاربری موجود نیست':'username already exist',false])
-                setAdded('translate-y-0 opacity-1')
-                setTimerStarted(true)
+                const response = await fetch(`http://127.0.0.1:2000/auth/register/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userRegisterData),
+                });
+                if (response.status === 409) {
+                    setStatus(['alert-error','نام کاربری موجود نیست' , false]);
+                    setAdded('translate-y-0 opacity-1');
+                    setTimerStarted(true);
+                } else if (response.status === 201) {
+                    const data = await response.json();
+                    setStatus(['alert-success','ثبت نام موفقیت‌آمیز', true]);
+                    setAdded('translate-y-0 opacity-1');
+                    setTimerStarted(true);
+                    cookies.set('token', data.token, { path: '/' });
+                    setTimeout(() => {
+                        // Redirect to another page using the history object
+                        window.location.href = '/products/';
+                    }, 2000); // Delay in milliseconds (2 seconds)
+                }
+            } catch (error) {
+                setStatus(['alert-error', 'Error has occurred', false]);
+                setAdded('translate-y-0 opacity-1');
+                setTimerStarted(true);
+                console.error('Error fetching products:', error);
             }
-            else if(response.status === 201){
-                const data = await response.json();
-                setStatus(['alert-success',isFarsi?'ثبت نام موفقیت امیز':'register successful',true])
-                setAdded('translate-y-0 opacity-1')
-                setTimerStarted(true)
-                cookies.set('token', data.token, { path: '/' })
-                setTimeout(() => {
-                    // Redirect to another page using the history object
-                    window.location.href = '/products/';
-                  }, 2000); // Delay in milliseconds (2 seconds)
-                
-            }
-            
-        } catch (error) {
-            setStatus(['alert-error','error has accured',false])
-            setAdded('translate-y-0 opacity-1')
-            setTimerStarted(true)
-            console.error('Error fetching products:', error);
-          }
+        } else {
+            setStatus(['alert-error', isFarsi ? 'رمز عبور‌ها یکسان نیستند' : "Passwords don't match", false]);
+            setAdded('translate-y-0 opacity-1');
+            setTimerStarted(true);
         }
-        else if (sspassword !== spassword){
-            setStatus(['alert-error',isFarsi?'رمزعبور ها یکی نیستند':"passwords don't match",false])
-            setAdded(' translate-y-0 opacity-1')
-            setTimerStarted(true)
-        }
-
     }
+    
     return(
-    <div className="flex flex-col md:flex-row bg-base-100" data-theme={theme}>
-        <div ref={Log}  className={`px-10 sm:w-1/2 min-h-screen  items-center justify-center flex flex-col ${isFarsi?'font-yek':' font-mont font-thin '}`}>
+    <div className="account-page flex flex-col sm:flex-row bg-base-100 font-yek " data-theme={theme}>
+        <div ref={Log}  className={`px-10 sm:w-1/2 min-h-screen  items-center justify-center flex flex-col `}>
             <div className="w-full h-fit  p-3 flex flex-col gap-5 justify-center">
                 <h1 className="  text-3xl mb-10 text-center text-accent">{isFarsi?'ورود به حساب کاربری':'Login to Your account'}</h1>
                 <input 
                     name="email"
                     value={email}
                     type="text"
-                    autoComplete="email"
-                    placeholder={isFarsi?'ادرس ایمیل':"Email address"}
+                    autoComplete="username"
+                    placeholder={t('ایمیل یا نام کاربری', 'Email or username')}
+                    aria-label={t('ایمیل یا نام کاربری', 'Email or username')}
                     className="  p-2  bg-base-100 outline-none border-b-2 border-accent text-accent"
                     onChange={(e) => setemail(e.target.value)} 
                     required />
                 <input 
                     name="password"
                     value={password}
-                    type="text" 
-                    autoComplete="password" 
+                    type="password" 
+                    autoComplete="current-password" 
+                    aria-label={t('رمز عبور', 'Password')}
                     placeholder={isFarsi?'رمز عبور':"password"} 
                     className="  p-2  bg-base-100 outline-none border-b-2 border-accent text-accent"
                     onChange={(e) => setPassword(e.target.value)} 
                     required />
 
-                <a className="w-1/2 text-xs cursor-pointer ">
-                    <span className="underline   text-accent">{isFarsi?'فراموشی رمز عبور':"ّForgot your password?"} </span>    
+                <a className="w-1/2 text-xs cursor-pointer " href="/reset-password/" >
+                    <span className="underline   text-accent">{t('فراموشی رمز عبور', 'Forgot password?')} </span>    
                 </a>    
                 <a className="w-1/2 text-xs cursor-pointer sm:hidden"  onClick={scrollToReg}>
                     <span className="underline   text-accent">{isFarsi?'حساب کاربری ندارید؟ساخت حساب':"don't have an account?"}</span>    
@@ -165,7 +172,7 @@ const Accounts = () => {
                     required
                     onClick={handleLogin} 
                     >
-                                <span>Login</span>        
+                                <span>{t('ورود', 'Sign in')}</span>        
                 </button>
 
             </div>
@@ -195,8 +202,8 @@ const Accounts = () => {
                 <input 
                     name="password"
                     value={spassword}
-                    type="text"
-                    autoComplete="password"
+                    type="password"
+                    autoComplete="new-password"
                     placeholder={isFarsi?'رمز عبور':"password"} 
                     className="  p-2  bg-base-100 outline-none border-b-2 border-accent text-accent"
                     onChange={(e) => setsPassword(e.target.value)} 
@@ -204,8 +211,8 @@ const Accounts = () => {
                 <input 
                     name="sec-password"
                     value={sspassword}
-                    type="text"
-                    autoComplete="password"
+                    type="password"
+                    autoComplete="new-password"
                     placeholder={isFarsi?'تکرار رمز عبور':"password again"} 
                     className="  p-2  bg-base-100 outline-none border-b-2 border-accent text-accent"
                     onChange={(e) => setssPassword(e.target.value)} 
@@ -217,7 +224,7 @@ const Accounts = () => {
                     onClick={handleRegister} 
                     >            
                         <span>
-                        {isFarsi?'ثبت نام':"Register"} 
+                        {t('ثبت نام', 'Create account')} 
                         </span>        
                 </button>  
                 <a className="w-1/2 text-xs cursor-pointer"  onClick={scrollToLog}>
