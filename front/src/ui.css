@@ -331,7 +331,7 @@ html { scroll-padding-top: 28px; }
 @media(max-width:760px) {
  .site-root .lux-campaign { min-height: 700px; background: #bdbdbd; }
  .site-root .lux-campaign-image { top: 65px; height: calc(100% - 250px); object-fit: contain; object-position: center !important; }
- .site-root .lux-campaign-image { mask-image: linear-gradient(to bottom,transparent,#000 15%,#000 80%,transparent); }
+ .site-root .lux-campaign-image { mask-image: linear-gradient(to bottom,transparent 12%,#000 25%,#000 70%,transparent 88%); }
  .site-root .lux-campaign::after { background: none; }
  .site-root .lux-campaign-copy { left: 5%; bottom: 85px; width: 90%; max-width: none; text-align: center; }
  .site-root .lux-campaign-copy h1 { font-size: 27px; margin-block: 10px 18px; }
