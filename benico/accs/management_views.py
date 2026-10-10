@@ -13,7 +13,7 @@ from .models import order
 import secrets
 
 def serialize_product(product):
-    return dict(id=product.id, title=product.title, category=product.category, price=product.price or 0,
+    return dict(id=product.id, title=product.title, description=product.description, materials_care=product.materials_care, category=product.category, price=product.price or 0,
         L_count=product.L_count or 0, XL_count=product.XL_count or 0, XXL_count=product.XXL_count or 0,
         images=[str(image.urlpid) for image in product.prod_image_set.all()])
 
@@ -64,6 +64,11 @@ def save_product(request, product_id=None):
                 values[field] = value
     if errors:
         return Response({'error': 'Check the highlighted fields.', 'fields': errors}, status=400)
+    for field in ('description', 'materials_care'):
+        value = request.data.get(field, getattr(product, field, ''))
+        if not isinstance(value, str) or len(value) > 8000:
+            return Response({'error': 'Keep product details within 8,000 characters.', 'fields': {field: 'Text must be within 8,000 characters.'}}, status=400)
+        values[field] = value.strip()
     with transaction.atomic():
         if product is None:
             identifier = secrets.randbelow(900000) + 10000

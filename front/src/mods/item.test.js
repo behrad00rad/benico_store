@@ -1,0 +1,13 @@
+import {render,screen,fireEvent} from '@testing-library/react';
+import {MemoryRouter,Routes,Route} from 'react-router-dom';
+import Cookies from 'universal-cookie';
+import {LanguageProvider} from '../language';
+import ItemPage from './item';
+jest.mock('./Footer',()=>()=>null);
+const piece={id:8101,title:'Sample piece',category:'hoodie',price:590,L_count:1,XL_count:0,XXL_count:-1,images:['front','back'],out:false,description:'A real description',materials_care:'Read the label'};
+const mount=()=>render(<LanguageProvider><MemoryRouter initialEntries={['/item/8101/']}><Routes><Route path="/item/:id/" element={<ItemPage/>}/></Routes></MemoryRouter></LanguageProvider>);
+beforeEach(()=>{document.cookie='Lang=en; path=/';new Cookies().set('cartData',[],{path:'/'});global.fetch=jest.fn(url=>Promise.resolve({ok:true,json:()=>Promise.resolve({data:url.includes('filtered')?[piece]:[]})}));});
+afterEach(()=>{new Cookies().remove('cartData',{path:'/'});jest.restoreAllMocks();delete global.fetch;});
+test('size selection respects inventory and adding cannot exceed stock',async()=>{mount();await screen.findByRole('heading',{name:'Sample piece'});const add=screen.getByRole('button',{name:/Add to bag/});expect(add).toBeDisabled();expect(screen.getByRole('button',{name:'XL Sold out'})).toBeDisabled();fireEvent.click(screen.getByRole('button',{name:'L Available'}));fireEvent.click(add);expect(new Cookies().get('cartData')[0]).toMatchObject({productId:'8101',size:'L',quantity:1});fireEvent.click(add);expect(new Cookies().get('cartData')[0].quantity).toBe(1);expect(screen.getByRole('status')).toHaveTextContent('all available pieces');});
+test('gallery navigates and product details use supplied content',async()=>{const {container}=mount();await screen.findByText('A real description');fireEvent.click(screen.getByRole('button',{name:'Next image'}));expect(container.querySelector('.pdp-image img').getAttribute('src')).toContain('/back/');expect(screen.getByText('Read the label')).toBeInTheDocument();});
+test('missing products show a recovery link',async()=>{global.fetch=jest.fn(url=>Promise.resolve(url.includes('filtered')?{ok:false,status:404}:{ok:true,json:()=>Promise.resolve({data:[]})}));mount();expect(await screen.findByRole('heading',{name:'Product not found'})).toBeInTheDocument();expect(screen.getByRole('link',{name:/Explore the collection/})).toHaveAttribute('href','/products/');});

@@ -80,13 +80,15 @@ class ManagementApiTests(TestCase):
 
     def test_staff_can_create_update_and_view_products(self):
         self.authorize(self.staff_token)
-        values = dict(title='New piece', category='hoodie', price=590, L_count=4, XL_count=2, XXL_count=1)
+        values = dict(title='New piece', category='hoodie', price=590, L_count=4, XL_count=2, XXL_count=1, description='Description', materials_care='Care instructions')
         response = self.client.post('/auth/manage/products/', values, format='json')
         self.assertEqual(response.status_code, 201)
         identifier = response.data['product']['id']
         response = self.client.patch(f'/auth/manage/products/{identifier}/', {'L_count':9}, format='json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['product']['L_count'], 9)
+        self.assertEqual(response.data['product']['description'], 'Description')
+        self.assertEqual(response.data['product']['materials_care'], 'Care instructions')
         response = self.client.get('/auth/manage/overview/')
         self.assertEqual(len(response.data['products']), 2)
         self.assertEqual(response.data['user']['username'], 'staff')

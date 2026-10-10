@@ -58,7 +58,8 @@ def all(request):
 
 def filtered(request,id):
     res = []
-    i = item.objects.all().get(id=id)
+    from django.shortcuts import get_object_or_404
+    i = get_object_or_404(item, pk=id)
     res.append({
         "title":i.title,
         "id" :i.id,
@@ -67,6 +68,8 @@ def filtered(request,id):
         "XL_count" : i.XL_count,
         "XXL_count" : i.XXL_count,
         "category": i.category,
+        "description": i.description,
+        "materials_care": i.materials_care,
         "images" : [str(f.urlpid) for f in prod_image.objects.filter(prod__id=i.id).all()],
         "out" : not any((count or 0) > 0 for count in (i.L_count, i.XL_count, i.XXL_count))
         }) 

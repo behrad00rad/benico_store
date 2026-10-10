@@ -8,8 +8,7 @@ The local `main` branch tracks `origin/main` at
 https://github.com/behrad00rad/benico_store.git.
 The remote baseline is commit `38f0bb0`. Existing local source files were
 preserved; there are substantial differences, including different Django
-migration histories. Review these before committing or pushing. No changes
-were pushed.
+migration histories. The current source and migration baseline were committed and pushed as 7186560.
 
 ## Run the existing local storefront
 

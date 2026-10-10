@@ -49,7 +49,7 @@ layouts without horizontal overflow and with no broken homepage images.
 6. Consolidate API URLs and deployment settings; review local/GitHub migration differences.
 
 The original LOCAL_SETUP.md records the first check before these repairs.
-No code has been pushed to GitHub.
+The storefront and custom admin baseline were pushed to GitHub as 7186560.
 
 ## Portfolio-inspired motion and language
 
@@ -87,3 +87,7 @@ No code has been pushed to GitHub.
 - Custom panel supports Persian/English, responsive layout, keyboard-accessible dialogs, save errors, empty states and sign-out.
 - Production build passed with remaining legacy warnings; eight frontend and twelve backend tests passed.
 - Browser verified real staff login/automatic redirect, product search and unchanged-value save, order filters and order details, both languages, and mobile layout. No orders, stock counts or payment states were changed by verification.
+
+## Product page update
+
+Gucci-inspired paired gallery, thumbnails, image zoom, size selection, stock-aware bag actions, detail accordions, and related pieces. Product description and materials/care fields are editable in the custom panel. Existing products retain their current stock and prices; missing information is clearly identified. Visual browser verification was blocked by the desktop browser policy; build and automated tests are checked.

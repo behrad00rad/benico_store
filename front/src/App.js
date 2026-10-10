@@ -94,7 +94,7 @@ function AppContent() {
                 } 
              />
         <Route path="/item/:id" element={
-              <div className=" app-shell ">
+              <div className="product-route">
               <Nav />
               <ItemPage />
               </div>} 

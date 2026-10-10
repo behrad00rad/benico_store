@@ -1,200 +1,29 @@
-import React, { useContext, useEffect, useState } from 'react';
-import ImageSlider from './imageslider';
-import {useLanguage} from '../language';
-import { useParams } from 'react-router-dom';
+import {useEffect,useRef,useState} from 'react';
+import {Link,useParams} from 'react-router-dom';
 import Cookies from 'universal-cookie';
+import {useLanguage} from '../language';
 import Footer from './Footer';
-import { ThemeContext } from './themeprovider';
-
-const ItemPage = () => {
-  const {t, lang} = useLanguage();
-  const theme = useContext(ThemeContext);
-  const [left, setLeft] = useState(0);
-  const [mess, setMess] = useState();
-  const [added, setAdded] = useState([' translate-y-full opacity-0 ']);
-  const MAINURL = 'http://127.0.0.1:2000';
-  const [timerStarted, setTimerStarted] = useState(false);
-  const [images, setImages] = useState([]);
-  const [selectedSize, setSelectedSize] = useState();
-  const [product, setProduct] = useState({});
-  const { id } = useParams();
-  const cookies = new Cookies();
-
-  // Check if the language is Farsi
-  const isFarsi = cookies.getAll().Lang === 'fa';
-
-  useEffect(() => {
-    let timer;
-    if (timerStarted) {
-      timer = setTimeout(() => {
-        setAdded(' translate-y-full opacity-0 ');
-        setTimerStarted(false);
-      }, 2000);
-    }
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [timerStarted]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [id]);
-
-  const handlesizeselect = (S) => {
-      setLeft(product[S + '_count']);
-      setSelectedSize(S); // Set the selected size
-  };
-  
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch(`${MAINURL}/product/filtered/${id}/`);
-      const data = await response.json();
-      setProduct(data.data[0]);
-      setImages(data.data[0].images);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    }
-  };
-
-  const addToCart = (productId, selectedSize) => {
-    let cartData = cookies.get('cartData') || [];
-
-    const existingItem = cartData.find(
-      (item) => item.productId === productId && item.size === selectedSize
-    );
-    if (existingItem) {
-      if (existingItem.left > existingItem.quantity) {
-        existingItem.quantity += 1;
-      } else {
-        setMess(isFarsi ? "تعداد مورد نیاز به موجودی اضافه نشده است" : "No more left");
-        setAdded('alert-error translate-y-0 opacity-1');
-        setTimerStarted(true);
-        return 1;
-      }
-    } else {
-      cartData.push({ productId, quantity: 1, size: selectedSize, price: product.price, title: product.title, left: product[`${selectedSize}_count`] });
-    }
-
-
-    cookies.set('cartData', cartData, { path: '/' });
-
-    const cartItemCount = cartData.length;
-    window.dispatchEvent(new CustomEvent('cartItemCountUpdated', { detail: cartItemCount }));
-
-    // Dispatch 'cartItemUpdated' event to notify the sidebar of cart data changes
-    window.dispatchEvent(new CustomEvent('cartItemUpdated'), { detail: cookies.getAll() });
-
-    setMess(isFarsi ? "به سبد خرید اضافه شد" : "Added to you cart");
-    setAdded('translate-y-0 opacity-1 alert-success ');
-    setTimerStarted(true);
-  };
-
-  return (
-    <div className={`bg-base-100 min-w-screen h-full z-30 sm:p-10 flex flex-col items-center justify-center gap-10 font-yek`} data-theme={theme}>
-      <div className=' text-neutral h-fit bg-secondary flex flex-col md:flex-row sm:rounded overflow-hidden product-layout'>
-        <div className='md:w-2/5 product-media'>
-          <ImageSlider uuids={images} />
-        </div>
-        <div className='divide-x divider hidden sm:block'></div>
-        <div className='p-10 sm:w-3/5 sm:gap-16 gap-3 flex flex-col justify-start '>
-
-          <div className='h-1/3 '>
-            <h1 className='text-3xl text-accent'>
-              {isFarsi ? `${product.title} #${product.id}` : `${product.title} #${product.id}`}
-            </h1>
-          </div>
-
-          <div className={`'  font-light sm:w-full flex flex-col sm:flex-row sm:items-center sm:justify-start gap-2`}>
-          
-                            <div className=' flex flex-row items-center sm:gap-3 sm:w-1/2 gap-2'>
-                                    <select
-                                      className="p-2 bg-base-100 sm:rounded text-accent w-1/2"
-                                      value={selectedSize || ""}
-                                      aria-label={t('انتخاب اندازه', 'Choose size')}
-                                      onChange={(event) => {handlesizeselect(event.target.value)}}
-                                    >
-                                      <option disabled value="">{isFarsi ? "انتخاب اندازه" : "Size"}</option>
-                                      <option value="L">L</option>
-                                      <option value="XL">XL</option>
-                                      <option value="XXL">2XL</option>
-                                    </select>
-                                    <span className='text-accent w-1/2  '>
-                                       {selectedSize ? (left > 0 ? `${left} ${t('موجود', 'available')}` : t('ناموجود', 'Sold out')) : t('انتخاب کنید', 'Choose a size')}
-                                    </span>
-                            </div>
-                          <button className="sm:w-1/4 rounded underline text-accent" onClick={()=>document.getElementById('my_modal_4').showModal()}>{isFarsi?'راهنمای اندازه':'Size Chart'}</button>
-                          <dialog id="my_modal_4" className="modal">
-                                <form method="dialog" className="bg-base-100 modal-box max-w-5xl rounded-lg font-bold">
-                                  <div className="overflow-x-auto ">
-                                    <table className="table bg-secondary rounded">
-                                      {/* head */}
-                                      <thead>
-                                        <tr>
-                                          <th></th>
-                                          <th>{isFarsi?'اندازه':'size'}</th>
-                                          <th>{isFarsi?'عرض شانه':'width'}</th>
-                                          <th>{isFarsi?'ارتفاع':'hight'}</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {/* row 1 */}
-                                        <tr>
-                                          <th>1</th>
-                                          <td>XL</td>
-                                          <td>57</td>
-                                          <td>79</td>
-                                        </tr>
-                                        {/* row 2 */}
-                                        <tr>
-                                          <th>2</th>
-                                          <td>2xl</td>
-                                          <td>63</td>
-                                          <td>85</td>
-                                        </tr>
-                                        {/* row 3 */}
-                                        <tr>
-                                          <th>3</th>
-                                          <td>3xl</td>
-                                          <td>69</td>
-                                          <td>91</td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                  <div className="modal-action font-ral">
-                                    {/* if there is a button, it will close the modal */}
-                                    <button className="text-accent">Close</button>
-                                  </div>
-                                </form>
-                          </dialog>
-          </div>
-          <div className='flex flex-col gap-y-3 sm:w-full  '>
-            <span className='text-accent sm:text-3xl  sm:items-center'>
-              {Number((product.price || 0) * 1000).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('تومان', 'toman')}
-            </span>
-            <div>
-              <button
-                disabled={!(product[selectedSize + "_count"] > 0)}
-                className={`${product[selectedSize+'_count'] > 0 || selectedSize === undefined &&  !product.out ?  'text-secondary':'disabled bg-base-100 text-red-600 ' } transition-color p-5 bg-accent rounded-sm sm:text-center sm:w-3/5 font-semibold  w-full `}
-                onClick={() => product[selectedSize+'_count'] > 0 && addToCart(id, selectedSize)}
-              >
-                {selectedSize === undefined && !product.out ? t('یک سایز را انتخاب کنید', 'Choose a size') : product[selectedSize+'_count'] > 0 && !product.out ? t('افزودن به سبد خرید', 'Add to bag') : t('ناموجود', 'Sold out')}
-              </button>
-            </div>
-          </div>
-          <div className={`alert transform  rounded-none ease-in transition-all duration-300 bottom-0 my-10 left-0 right-0 fixed ${added}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>{mess}</span>
-          </div>
-        </div>
-      </div>
-      <div className='w-full'>
-        <Footer />
-      </div>
-    </div>
-  );
-};
-
-export default ItemPage;
+import './product-page.css';
+export default function ItemPage(){
+ const {id}=useParams(),{t,lang}=useLanguage();
+ const [product,setProduct]=useState(null),[error,setError]=useState(''),[size,setSize]=useState(''),[notice,setNotice]=useState(''),[active,setActive]=useState(0),[related,setRelated]=useState([]);
+ const zoom=useRef(null),touch=useRef(null);
+ useEffect(()=>{const c=new AbortController();setProduct(null);setSize('');setActive(0);setNotice('');setError('');fetch(`/product/filtered/${id}/`,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error(r.status===404?'missing':'network');return r.json();}).then(d=>setProduct(d.data[0])).catch(e=>{if(e.name!=='AbortError')setError(e.message);});fetch('/product/all/',{signal:c.signal}).then(r=>r.json()).then(d=>setRelated(d.data.filter(p=>String(p.id)!==id).slice(0,4))).catch(()=>setRelated([]));return()=>c.abort();},[id]);
+ const money=v=>`${Number(v*1000).toLocaleString(lang==='fa'?'fa-IR':'en-US')} ${t('تومان','toman')}`;
+ const category=v=>({hoodie:t('هودی','Hoodies'),'t-shirt':t('تیشرت','T-shirts'),sweatshirt:t('دورس','Sweatshirts'),accessory:t('اکسسوری','Accessories')}[v]||v);
+ const move=n=>setActive(i=>(i+n+product.images.length)%product.images.length);
+ function add(){const c=new Cookies(),cart=c.get('cartData')||[],stock=product[`${size}_count`],existing=cart.find(p=>String(p.productId)===String(product.id)&&p.size===size);if(!size||stock<=0)return;if(existing&&existing.quantity>=stock){setNotice(t('موجودی بیشتری از این سایز نیست.','You have all available pieces of this size in your bag.'));return;}if(existing){existing.quantity+=1;existing.left=stock;}else cart.push({productId:String(product.id),quantity:1,size,price:product.price,title:product.title,left:stock});c.set('cartData',cart,{path:'/',sameSite:'lax'});window.dispatchEvent(new CustomEvent('cartItemCountUpdated',{detail:cart.length}));window.dispatchEvent(new CustomEvent('cartItemUpdated'));setNotice(t('به سبد خرید اضافه شد.','Added to your bag.'));}
+ if(!product)return <main className="pdp-state"><h1>{error?(error==='missing'?t('محصول پیدا نشد','Product not found'):t('بارگذاری ناموفق بود','Unable to load this piece')):t('در حال بارگذاری محصول…','Loading your piece…')}</h1>{error&&<Link to="/products/">{t('مشاهده مجموعه','Explore the collection')} →</Link>}</main>;
+ return <><main className="pdp"><nav className="pdp-breadcrumb"><Link to="/">BENICO</Link><span>/</span><Link to={`/products/${product.category}/`}>{category(product.category)}</Link><span>/</span><span>{product.title}</span></nav>
+ <section className={`pdp-gallery ${product.images.length<2?'pdp-single':''}`} aria-label={t('تصاویر محصول','Product gallery')} dir="ltr" onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{if(touch.current!==null&&Math.abs(touch.current-e.changedTouches[0].clientX)>50&&product.images.length>1)move(touch.current>e.changedTouches[0].clientX?1:-1);touch.current=null;}}>
+ {product.images.length?<div className="pdp-frames">{[active,...(product.images.length>1?[(active+1)%product.images.length]:[])].map((i,pos)=><button className={`pdp-image pdp-image-${pos}`} key={i} onClick={()=>{setActive(i);zoom.current.showModal();}} aria-label={`${t('بزرگ‌نمایی تصویر','Enlarge image')} ${i+1}`}><img src={`/image/item/${product.images[i]}/`} alt={`${product.title} — ${i+1}`}/><span>＋</span></button>)}</div>:<p className="pdp-state">{t('تصویر موجود نیست','No image available')}</p>}
+ {product.images.length>1&&<div className="pdp-gallery-controls"><button aria-label={t('تصویر قبلی','Previous image')} onClick={()=>move(-1)}>←</button><div className="pdp-thumbnails">{product.images.map((uuid,i)=><button key={uuid} aria-label={`${t('تصویر','Image')} ${i+1}`} aria-pressed={active===i} onClick={()=>setActive(i)}><img src={`/image/item/${uuid}/`} alt=""/></button>)}</div><button aria-label={t('تصویر بعدی','Next image')} onClick={()=>move(1)}>→</button><span>{active+1} / {product.images.length}</span></div>}
+ <a className="pdp-gallery-caption" href="#piece-details">{product.title}<span>{t('کشف جزئیات','Discover the details')} ↓</span></a></section>
+ <div className="pdp-information" id="piece-details"><section className="pdp-details"><p className="pdp-eyebrow">BENICO / {category(product.category)}</p><h1>{product.title}</h1><p className="pdp-price">{money(product.price)}</p><div className="pdp-description"><h2>{t('توضیحات محصول','Product description')}</h2><p className="pdp-style">{t('شناسه محصول','Style')} #{product.id}</p><p>{product.description||t('برای جزئیات بیشتر درباره این محصول با ما تماس بگیرید.','Contact us for more information about this piece.')}</p></div>
+ <details className="pdp-accordion"><summary>{t('جزئیات محصول','Product details')}<span>＋</span></summary><p>{category(product.category)} · BENICO</p><p>{t('سایزهای موجود','Available sizes')}: {['L','XL','XXL'].filter(s=>product[`${s}_count`]>0).join(' / ')||t('ناموجود','Sold out')}</p></details>
+ <details className="pdp-accordion"><summary>{t('جنس و نگهداری','Materials & care')}<span>＋</span></summary><p>{product.materials_care||t('اطلاعات جنس و شستشو هنوز ثبت نشده است. پیش از خرید از ما بپرسید.','Material and care information has not been provided yet. Please ask us before purchasing.')}</p></details>
+ <details className="pdp-accordion"><summary>{t('راهنمای اندازه','Size guidance')}<span>＋</span></summary><p>{t('برای اندازه‌های دقیق این محصول و انتخاب سایز مناسب با ما تماس بگیرید.','Contact us for this piece’s measurements and help choosing your size.')}</p><Link to="/contact-us/">{t('ارتباط با ما','Contact us')} ↗</Link></details></section>
+ <aside className="pdp-purchase"><p className="pdp-eyebrow">{t('انتخاب شما','MAKE IT YOURS')}</p><p>{product.out?t('این محصول در حال حاضر ناموجود است.','This piece is currently sold out.'):t('برای افزودن به سبد خرید، سایز خود را انتخاب کنید.','Select your size to add this piece to your bag.')}</p><fieldset><legend>{t('انتخاب اندازه','Select size')}</legend><div className="pdp-sizes" dir="ltr">{['L','XL','XXL'].map(s=><button key={s} disabled={product[`${s}_count`]<=0} aria-pressed={size===s} onClick={()=>{setSize(s);setNotice('');}}>{s}<small>{product[`${s}_count`]>0?t('موجود','Available'):t('ناموجود','Sold out')}</small></button>)}</div></fieldset><p className="pdp-stock">{size?`${product[`${size}_count`]} ${t('عدد موجود','pieces available')}`:t('موجودی بر اساس سایز','Availability by size')}</p><button className="pdp-add" disabled={!size||product[`${size}_count`]<=0} onClick={add}>{product.out?t('ناموجود','Sold out'):t('افزودن به سبد خرید','Add to bag')} <span>↗</span></button><div className="pdp-notice" role="status">{notice&&<>{notice} <Link to="/cart/">{t('مشاهده سبد','View bag')} →</Link></>}</div><Link className="pdp-service" to="/contact-us/"><span>{t('به کمک نیاز دارید؟','Need a hand?')}<small>{t('درباره اندازه و محصول از ما بپرسید','Ask about sizing and product details')}</small></span>↗</Link><Link className="pdp-service" to="/products/"><span>{t('بیشتر از بنیکو','More from Benico')}<small>{t('مشاهده مجموعه','Explore the collection')}</small></span>↗</Link></aside></div>
+ {!!related.length&&<section className="pdp-related"><p className="pdp-eyebrow">THE BENICO EDIT</p><h2>{t('شاید بپسندید','You may also like')}</h2><div>{related.map(p=><Link key={p.id} to={`/item/${p.id}/`}><div className="pdp-related-image">{p.images[0]&&<img loading="lazy" src={`/image/item/${p.images[0]}/`} alt={p.title}/>}</div><h3>{p.title}</h3><p>{money(p.price)}</p></Link>)}</div></section>}
+ <dialog ref={zoom} className="pdp-zoom" aria-label={t('نمای بزرگ محصول','Enlarged product image')} onClick={e=>{if(e.target===e.currentTarget)zoom.current.close();}}><button className="pdp-zoom-close" aria-label={t('بستن','Close')} onClick={()=>zoom.current.close()}>×</button>{product.images.length>0&&<img src={`/image/item/${product.images[active]}/`} alt={product.title}/ >}{product.images.length>1&&<div><button aria-label={t('تصویر قبلی','Previous image')} onClick={()=>move(-1)}>←</button><span>{active+1} / {product.images.length}</span><button aria-label={t('تصویر بعدی','Next image')} onClick={()=>move(1)}>→</button></div>}</dialog></main><Footer/></>;
+}

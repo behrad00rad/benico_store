@@ -50,6 +50,7 @@ class ProductAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
     fieldsets = (
         ('Product', {'fields': ('id', 'title', 'category', 'date')}),
+        ('Product details', {'fields': ('description', 'materials_care')}),
         ('Price and stock', {'fields': ('price', 'L_count', 'XL_count', 'XXL_count'), 'description': 'Price is stored in thousands of toman: 590 means 590,000 toman. Sample products are labeled [SAMPLE].'}),
     )
 
