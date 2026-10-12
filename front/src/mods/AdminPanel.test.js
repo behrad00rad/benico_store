@@ -46,3 +46,24 @@ test('unauthorized users cannot see store data', async () => {
   await screen.findByRole('heading',{name:'Administrator access required'});
   expect(screen.queryByText('Sample hoodie')).not.toBeInTheDocument();
 });
+
+
+test('image removal waits for Save and Cancel preserves images', async () => {
+  const withImage = {...product, images:['model-photo']};
+  const catalog = {...overview, products:[withImage]};
+  global.fetch.mockResolvedValue({ok:true,status:200,json:()=>Promise.resolve(catalog)});
+  renderPanel();
+  await screen.findByText('Everything you need to run Benico');
+  fireEvent.click(screen.getByRole('button',{name:/Products/}));
+  fireEvent.click(screen.getByRole('button',{name:'Edit',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Remove image model-photo'}));
+  expect(global.fetch.mock.calls.some(([,options])=>options.method==='DELETE')).toBe(false);
+  fireEvent.click(screen.getByRole('button',{name:'Cancel',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Edit',exact:true}));
+  expect(screen.getByRole('button',{name:'Remove image model-photo'})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Remove image model-photo'}));
+  global.fetch.mockImplementation((url,options)=>Promise.resolve({ok:true,status:200,json:()=>Promise.resolve(options.method?{product:{...withImage,images:[]}}:catalog)}));
+  fireEvent.click(screen.getByRole('button',{name:'Save product'}));
+  await screen.findByText('Product saved.');
+  expect(global.fetch.mock.calls.some(([url,options])=>url==='/auth/manage/products/8101/images/model-photo/'&&options.method==='DELETE')).toBe(true);
+});

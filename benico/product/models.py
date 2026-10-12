@@ -13,6 +13,7 @@ class item(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
     materials_care = models.TextField(blank=True, default='')
+    size_guide = models.TextField(blank=True, default='')
     category = models.CharField(max_length=255,choices=CATEGORY_CHOICES)
     L_count = models.IntegerField(default=0,null=True,blank=True)
     XL_count = models.IntegerField(default=0,null=True,blank=True)

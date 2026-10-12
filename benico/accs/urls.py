@@ -14,6 +14,7 @@ urlpatterns =[
     path('manage/products/', management_views.save_product),
     path('manage/products/<int:product_id>/', management_views.save_product),
     path('manage/products/<int:product_id>/images/', management_views.upload_image),
+    path('manage/products/<int:product_id>/images/<uuid:image_id>/', management_views.delete_image),
     path('loginn/',views.login,name=''),
     path('register/',views.register,name=''),
     path('get_info/',views.get_user_info,name=''),

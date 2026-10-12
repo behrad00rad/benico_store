@@ -49,6 +49,7 @@ def all(request):
         "XL_count" : i.XL_count,
         "XXL_count" : i.XXL_count,
         "category ": i.category,
+        "image_media": [{"id": str(f.urlpid), "role": f.role} for f in prod_image.objects.filter(prod__id=i.id)],
         "images" : [str(f.urlpid) for f in prod_image.objects.filter(prod__id=i.id).all()],
         "out" : not any((count or 0) > 0 for count in (i.L_count, i.XL_count, i.XXL_count))
         }) 
@@ -70,6 +71,8 @@ def filtered(request,id):
         "category": i.category,
         "description": i.description,
         "materials_care": i.materials_care,
+        "size_guide": i.size_guide,
+        "image_media": [{"id": str(f.urlpid), "role": f.role} for f in prod_image.objects.filter(prod__id=i.id)],
         "images" : [str(f.urlpid) for f in prod_image.objects.filter(prod__id=i.id).all()],
         "out" : not any((count or 0) > 0 for count in (i.L_count, i.XL_count, i.XXL_count))
         }) 
@@ -89,7 +92,8 @@ def filteredCat(request,Cat,offset):
                 "XL_count" : i.XL_count,
                 "XXL_count" : i.XXL_count,
                 "category": i.category,
-                "images" : [str(f.urlpid) for f in prod_image.objects.filter(prod__id=i.id).all()],
+                "image_media": [{"id": str(f.urlpid), "role": f.role} for f in prod_image.objects.filter(prod__id=i.id)],
+        "images" : [str(f.urlpid) for f in prod_image.objects.filter(prod__id=i.id).all()],
                 "out" : not any((count or 0) > 0 for count in (i.L_count, i.XL_count, i.XXL_count))
                 }) 
     return JsonResponse({"data":res}) 
@@ -106,6 +110,7 @@ def recomended(request):
         "XL_count" : i.XL_count,
         "XXL_count" : i.XXL_count,
         "category ": i.category,
+        "image_media": [{"id": str(f.urlpid), "role": f.role} for f in prod_image.objects.filter(prod__id=i.id)],
         "images" : [str(f.urlpid) for f in prod_image.objects.filter(prod__id=i.id).all()],
         "out" : not any((count or 0) > 0 for count in (i.L_count, i.XL_count, i.XXL_count))
         }) 

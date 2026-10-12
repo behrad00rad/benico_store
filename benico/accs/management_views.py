@@ -1,6 +1,7 @@
 """Staff-only API for the Benico management application."""
 from django import forms
 from django.db import transaction
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.authentication import TokenAuthentication
@@ -13,7 +14,7 @@ from .models import order
 import secrets
 
 def serialize_product(product):
-    return dict(id=product.id, title=product.title, description=product.description, materials_care=product.materials_care, category=product.category, price=product.price or 0,
+    return dict(id=product.id, title=product.title, description=product.description, materials_care=product.materials_care, size_guide=product.size_guide, category=product.category, price=product.price or 0,
         L_count=product.L_count or 0, XL_count=product.XL_count or 0, XXL_count=product.XXL_count or 0,
         images=[str(image.urlpid) for image in product.prod_image_set.all()])
 
@@ -34,10 +35,20 @@ def overview(request):
         'products': [serialize_product(product) for product in products],
         'orders': [serialize_order(record) for record in orders]})
 
-@api_view(['POST', 'PATCH'])
+@api_view(['POST', 'PATCH', 'DELETE'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAdminUser])
 def save_product(request, product_id=None):
+    if request.method == 'DELETE':
+        product = get_object_or_404(item, pk=product_id)
+        if product.orderp_set.exists():
+            return Response({'error': 'This product is part of an order and cannot be deleted. Set its stock to zero instead.'}, status=409)
+        try:
+            with transaction.atomic():
+                product.delete()
+        except IntegrityError:
+            return Response({'error': 'This product is referenced by an order and cannot be deleted.'}, status=409)
+        return Response({'deleted': product_id})
     if request.method == 'PATCH' and product_id is None:
         return Response({'error': 'Product ID is required'}, status=400)
     if request.method == 'POST' and product_id is not None:
@@ -64,7 +75,7 @@ def save_product(request, product_id=None):
                 values[field] = value
     if errors:
         return Response({'error': 'Check the highlighted fields.', 'fields': errors}, status=400)
-    for field in ('description', 'materials_care'):
+    for field in ('description', 'materials_care', 'size_guide'):
         value = request.data.get(field, getattr(product, field, ''))
         if not isinstance(value, str) or len(value) > 8000:
             return Response({'error': 'Keep product details within 8,000 characters.', 'fields': {field: 'Text must be within 8,000 characters.'}}, status=400)
@@ -94,3 +105,12 @@ def upload_image(request, product_id):
         return Response({'error': 'Upload a valid image file.'}, status=400)
     image = prod_image.objects.create(prod=product, img=checked)
     return Response({'image': str(image.urlpid), 'product': serialize_product(product)}, status=201)
+
+@api_view(['DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAdminUser])
+def delete_image(request, product_id, image_id):
+    product = get_object_or_404(item, pk=product_id)
+    image = get_object_or_404(prod_image, prod=product, urlpid=image_id)
+    image.delete()
+    return Response({'product': serialize_product(product)})

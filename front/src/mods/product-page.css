@@ -76,3 +76,5 @@
  .pdp-image-credit { bottom: 22px; font-size: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .pdp-track, .pdp-slide { transition: none; } }
+
+.pdp-description p,.pdp-accordion p{white-space:pre-line}

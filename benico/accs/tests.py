@@ -118,3 +118,28 @@ class ManagementApiTests(TestCase):
         response = self.client.post('/auth/loginn/', {'email':'customer','password':'test-password-123'}, format='json')
         self.assertEqual(response.data['redirect'], '/dashboard/detail/')
         self.assertFalse(response.data['user']['is_staff'])
+
+    def test_image_deletion_is_staff_only_and_scoped_to_product(self):
+        from image.models import prod_image
+        image = prod_image.objects.create(prod=self.product, img='test.jpg', role='model', position=-2)
+        other = item.objects.create(id=8102, title='Other', category='t-shirt')
+        url = f'/auth/manage/products/8101/images/{image.urlpid}/'
+        self.authorize(self.customer_token)
+        self.assertEqual(self.client.delete(url).status_code, 403)
+        self.authorize(self.staff_token)
+        self.assertEqual(self.client.delete(f'/auth/manage/products/{other.id}/images/{image.urlpid}/').status_code, 404)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['product']['images'], [])
+        self.assertFalse(prod_image.objects.filter(pk=image.pk).exists())
+
+    def test_product_deletion_preserves_order_history(self):
+        from .models import OrderP
+        self.authorize(self.customer_token)
+        self.assertEqual(self.client.delete('/auth/manage/products/8101/').status_code, 403)
+        self.authorize(self.staff_token)
+        line = OrderP.objects.create(order_id=42, product=self.product, Q=1)
+        self.assertEqual(self.client.delete('/auth/manage/products/8101/').status_code, 409)
+        line.delete()
+        self.assertEqual(self.client.delete('/auth/manage/products/8101/').status_code, 200)
+        self.assertFalse(item.objects.filter(pk=8101).exists())

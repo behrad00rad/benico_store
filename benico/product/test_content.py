@@ -78,3 +78,36 @@ class ContentManagementTests(TestCase):
                 self.assertEqual(self.client.put('/auth/manage/content/',{'content':content,'revision':0},format='json').status_code,200)
                 served=self.client.get(url);self.assertEqual(served.status_code,200);served.close()
                 self.assertEqual(self.client.post('/auth/manage/content/images/',{'image':SimpleUploadedFile('bad.png',b'not an image')},format='multipart').status_code,400)
+
+
+from django.core.management import call_command
+from django.test import TestCase
+from product.models import item
+from product.views import filtered
+from django.test import RequestFactory
+import json
+
+
+class CatalogContentTests(TestCase):
+    def test_seed_preserves_inventory_and_staff_edits_and_is_repeatable(self):
+        product = item.objects.create(id=8101, title='Staff title', category='hoodie',
+                                      description='Staff description', price=590, L_count=2)
+        call_command('fill_product_content')
+        product.refresh_from_db()
+        self.assertEqual((product.title, product.description, product.price, product.L_count),
+                         ('Staff title', 'Staff description', 590, 2))
+        self.assertIn('GENERATED SAMPLE', product.size_guide)
+        self.assertIn('unverified', product.materials_care)
+        first = (product.materials_care, product.size_guide)
+        call_command('fill_product_content')
+        product.refresh_from_db()
+        self.assertEqual(first, (product.materials_care, product.size_guide))
+        payload = json.loads(filtered(RequestFactory().get('/'), product.pk).content)
+        self.assertEqual(payload['data'][0]['size_guide'], product.size_guide)
+
+    def test_real_product_does_not_receive_invented_measurements(self):
+        product = item.objects.create(id=6999, title='Savior', category='t-shirt')
+        call_command('fill_product_content')
+        product.refresh_from_db()
+        self.assertIn('pending verification', product.size_guide)
+        self.assertNotIn('GENERATED SAMPLE', product.size_guide)

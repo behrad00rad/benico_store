@@ -97,3 +97,9 @@ Gucci-inspired paired gallery, thumbnails, image zoom, size selection, stock-awa
 Added staff-only bilingual homepage content management with image upload, focal-point controls, live preview, section visibility and revision conflict protection. Redesigned cart, checkout, account details, address book/editor, orders and confirmation around the storefront typography and neutral palette.
 
 Verification: 21 backend tests and 19 frontend tests pass; production build succeeds with existing warnings in unrelated legacy pages. Browser checks cover content save -> homepage display -> original copy restoration, quantity/total changes, checkout validation, Persian mobile layout, and account section navigation. No live orders were submitted during these checks. Test bag contents are removed afterwards. Visual QA also fixed old account CSS conflicts and a route change crash caused by stale section data.
+
+## Catalog content — October 12, 2026
+
+Filled empty descriptions and care guidance for the five known products with Persian and English copy. Added an editable size guide to staff management and product pages. Generated measurement examples are explicitly labeled for sample products; original products request verified measurements. Fabric composition is marked unverified. Existing prices, stock, staff copy, orders and image galleries are preserved.
+
+Reproduce with `python manage.py migrate` then `python manage.py fill_product_content` from the backend directory. The command only fills blank fields and can be rerun safely. Existing original, mockup, model and detail images remain available through image management.

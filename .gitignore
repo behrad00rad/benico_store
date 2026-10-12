@@ -165,3 +165,6 @@ node-compile-cache/
 .github-link/
 LOCAL_ADMIN_ACCESS.txt
 .local-backups/
+
+benico/.product-shots-imported
+benico/product-shots/

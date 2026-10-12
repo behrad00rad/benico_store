@@ -1,0 +1,7 @@
+{
+  "tool": "built-in imagegen",
+  "mode": "reference image generation",
+  "asset": "home-campaign-v2.webp",
+  "reference": "product-shots/infinite-model-v2.webp",
+  "prompt": "Use case: ads-marketing. Asset type: wide homepage fashion campaign background for BENICO, an understated independent streetwear label with burgundy, warm ivory and charcoal visual identity. Reference image: supplied adult model and black oversized Saturn graphic tee are garment/style references. Generate a cinematic editorial fashion photograph: one adult model wearing this same charcoal oversized Saturn graphic T-shirt with loose black trousers, leaning casually against a warm aged plaster wall in a quiet architectural courtyard. Muted deep burgundy wall accents and warm stone, late afternoon directional sunlight, elegant natural shadows, tactile cotton and subtle analog film grain. Wide landscape 16:9 composition, model near center with ample atmospheric negative space around and above, chest print visible and faithful to reference, lower quarter simple dark negative space for website heading. Authentic relaxed streetwear styling, sophisticated restrained art direction. No baked-in typography, no other brand logos, no watermarks, no collage or mock website UI."
+}
